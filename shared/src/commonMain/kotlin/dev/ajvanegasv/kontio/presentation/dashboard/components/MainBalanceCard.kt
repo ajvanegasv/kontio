@@ -3,6 +3,7 @@ package dev.ajvanegasv.kontio.presentation.dashboard.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -45,6 +47,24 @@ fun MainBalanceCard(
     balance: String = "$12,450.80",
     onAddFundsClick: () -> Unit = {}
 ) {
+    val isDark = isSystemInDarkTheme()
+    val glowAlpha = if (isDark) 0.25f else 0.12f
+    val buttonGradientColors = if (isDark) {
+        listOf(DashboardColors.InversePrimary, DashboardColors.SecondaryContainer)
+    } else {
+        listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
+    }
+    val buttonShadowSpotColor = if (isDark) {
+        DashboardColors.SecondaryContainer.copy(alpha = 0.5f)
+    } else {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+    }
+    val buttonShadowAmbientColor = if (isDark) {
+        DashboardColors.SecondaryContainer.copy(alpha = 0.3f)
+    } else {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+    }
+
     KontioGlassCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
@@ -58,8 +78,8 @@ fun MainBalanceCard(
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            DashboardColors.Primary.copy(alpha = 0.25f),
-                            DashboardColors.Primary.copy(alpha = 0.08f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = glowAlpha),
+                            MaterialTheme.colorScheme.primary.copy(alpha = glowAlpha * 0.32f),
                             Color.Transparent
                         )
                     )
@@ -73,7 +93,7 @@ fun MainBalanceCard(
             // Etiqueta Total Balance
             Text(
                 text = "Total Balance",
-                color = DashboardColors.OnSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -83,7 +103,7 @@ fun MainBalanceCard(
             // Monto en gran tamaño
             Text(
                 text = balance,
-                color = DashboardColors.OnSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 44.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = (-1).sp
@@ -91,22 +111,19 @@ fun MainBalanceCard(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Botón "Add Funds" con degradado de InversePrimary a SecondaryContainer
+            // Botón "Add Funds" con degradado y sombra adaptativa
             Box(
                 modifier = Modifier
                     .shadow(
                         elevation = 8.dp,
                         shape = CircleShape,
-                        spotColor = DashboardColors.SecondaryContainer.copy(alpha = 0.5f),
-                        ambientColor = DashboardColors.SecondaryContainer.copy(alpha = 0.3f)
+                        spotColor = buttonShadowSpotColor,
+                        ambientColor = buttonShadowAmbientColor
                     )
                     .clip(CircleShape)
                     .background(
                         Brush.horizontalGradient(
-                            colors = listOf(
-                                DashboardColors.InversePrimary,
-                                DashboardColors.SecondaryContainer
-                            )
+                            colors = buttonGradientColors
                         )
                     )
                     .clickable(
@@ -123,13 +140,13 @@ fun MainBalanceCard(
                     Icon(
                         imageVector = DashboardIcons.Add,
                         contentDescription = null,
-                        tint = DashboardColors.OnPrimary,
+                        tint = Color.White,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Add Funds",
-                        color = DashboardColors.OnPrimary,
+                        color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold
                     )

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -28,6 +29,7 @@ import dev.ajvanegasv.kontio.presentation.dashboard.components.QuickStatsSection
 import dev.ajvanegasv.kontio.presentation.dashboard.components.RecentTransactionsSection
 import dev.ajvanegasv.kontio.presentation.dashboard.components.defaultDashboardTransactions
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.LocalHazeState
+import dev.ajvanegasv.kontio.presentation.designsystem.theme.LocalKontioMeshColors
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 
@@ -35,7 +37,7 @@ typealias Transaction = DashboardTransaction
 
 /**
  * Pantalla principal del Dashboard de finanzas personales, replicando fielmente
- * el diseño y efectos visuales de cristal esmerilado (Glassmorphism) del HTML proporcionado.
+ * el diseño y efectos visuales de cristal esmerilado (Glassmorphism) tanto en modo Claro como Oscuro.
  */
 @Composable
 @Preview
@@ -58,9 +60,9 @@ fun Dashboard(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(DashboardColors.Background)
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            // Fondo ambiental Mesh-gradient idéntico al CSS del HTML
+            // Fondo ambiental Mesh-gradient adaptativo según el tema actual
             DashboardMeshBackground()
 
             // Contenido desplazable (registrado en Haze para efecto de desenfoque en tiempo real)
@@ -120,17 +122,16 @@ fun Dashboard(
 }
 
 /**
- * Fondo ambiental con malla de gradientes radiales ("mesh-bg" del HTML):
- * radial-gradient at 0% 0% (hsla 253, 16%, 7%)
- * radial-gradient at 50% 0% (hsla 225, 39%, 30%, 0.5)
- * radial-gradient at 100% 0% (hsla 339, 49%, 30%, 0.5)
+ * Fondo ambiental con malla de gradientes radiales adaptada dinámicamente mediante LocalKontioMeshColors.
  */
 @Composable
 private fun DashboardMeshBackground(
     modifier: Modifier = Modifier
 ) {
+    val meshColors = LocalKontioMeshColors.current
+
     Box(modifier = modifier.fillMaxSize()) {
-        // Orbe superior izquierdo (hsla 253, 16%, 7%)
+        // Orbe superior izquierdo
         Box(
             modifier = Modifier
                 .size(380.dp)
@@ -138,15 +139,14 @@ private fun DashboardMeshBackground(
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            DashboardColors.MeshIndigo.copy(alpha = 0.9f),
-                            Color(0xFF1E1735).copy(alpha = 0.4f),
+                            meshColors.topStartOrb,
                             Color.Transparent
                         )
                     )
                 )
         )
 
-        // Orbe superior central (hsla 225, 39%, 30%, 0.5)
+        // Orbe superior central
         Box(
             modifier = Modifier
                 .size(450.dp)
@@ -154,15 +154,14 @@ private fun DashboardMeshBackground(
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            DashboardColors.MeshCoolBlue.copy(alpha = 0.55f),
-                            Color(0xFF172545).copy(alpha = 0.25f),
+                            meshColors.topCenterOrb,
                             Color.Transparent
                         )
                     )
                 )
         )
 
-        // Orbe superior derecho (hsla 339, 49%, 30%, 0.5)
+        // Orbe superior derecho
         Box(
             modifier = Modifier
                 .size(400.dp)
@@ -170,15 +169,14 @@ private fun DashboardMeshBackground(
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            DashboardColors.MeshMagenta.copy(alpha = 0.50f),
-                            Color(0xFF48172D).copy(alpha = 0.20f),
+                            meshColors.topEndOrb,
                             Color.Transparent
                         )
                     )
                 )
         )
 
-        // Orbe ambiental cian en la zona media-inferior para refracción del cristal
+        // Orbe ambiental inferior izquierdo para refracción del cristal
         Box(
             modifier = Modifier
                 .size(340.dp)
@@ -186,7 +184,7 @@ private fun DashboardMeshBackground(
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            DashboardColors.SecondaryContainer.copy(alpha = 0.15f),
+                            meshColors.bottomStartOrb,
                             Color.Transparent
                         )
                     )

@@ -3,6 +3,7 @@ package dev.ajvanegasv.kontio.presentation.dashboard.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -30,7 +32,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.ajvanegasv.kontio.presentation.dashboard.DashboardColors
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.GlassTokens
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.kontioGlass
 import dev.chrisbanes.haze.HazeStyle
@@ -48,7 +49,7 @@ enum class DashboardTab {
  * Barra de navegación inferior esmerilada fija correspondiente al `<nav>` del HTML:
  * - Ancho completo con esquinas superiores redondeadas (rounded-t-lg)
  * - Efecto de cristal esmerilado profundo (backdrop-blur-2xl)
- * - Borde superior especular translúcido (border-t border-white/20)
+ * - Borde superior especular adaptativo al tema
  * - Píldora activa destacada para la pestaña seleccionada (Cards por defecto)
  */
 @Composable
@@ -57,6 +58,8 @@ fun DashboardBottomNavBar(
     onTabSelected: (DashboardTab) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val isDark = isSystemInDarkTheme()
+    val topBorderColor = if (isDark) Color.White.copy(alpha = 0.20f) else Color.Black.copy(alpha = 0.06f)
     val navShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
 
     Box(
@@ -65,19 +68,20 @@ fun DashboardBottomNavBar(
             .kontioGlass(
                 shape = navShape,
                 style = {
+                    val surfaceColor = MaterialTheme.colorScheme.surfaceContainer
                     HazeStyle(
-                        backgroundColor = DashboardColors.SurfaceContainer.copy(alpha = 0.15f),
+                        backgroundColor = surfaceColor.copy(alpha = if (isDark) 0.15f else 0.50f),
                         blurRadius = 26.dp,
-                        tints = listOf(HazeTint(color = DashboardColors.SurfaceContainer.copy(alpha = 0.25f))),
+                        tints = listOf(HazeTint(color = surfaceColor.copy(alpha = if (isDark) 0.25f else 0.65f))),
                         noiseFactor = GlassTokens.NoiseFactor
                     )
                 },
                 borderBrush = null
             )
             .drawBehind {
-                // Borde superior especular (border-t border-white/20)
+                // Borde superior especular
                 drawLine(
-                    color = Color.White.copy(alpha = 0.20f),
+                    color = topBorderColor,
                     start = Offset(0f, 0f),
                     end = Offset(size.width, 0f),
                     strokeWidth = 1.dp.toPx()
@@ -122,7 +126,7 @@ fun DashboardBottomNavBar(
                 Icon(
                     imageVector = DashboardIcons.AddCircle,
                     contentDescription = "Add",
-                    tint = DashboardColors.Primary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(30.dp)
                 )
             }
@@ -153,12 +157,21 @@ private fun DashboardNavItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val contentColor = if (isSelected) DashboardColors.Secondary else DashboardColors.Outline
+    val isDark = isSystemInDarkTheme()
+    val contentColor = if (isSelected) {
+        MaterialTheme.colorScheme.secondary
+    } else {
+        MaterialTheme.colorScheme.outline
+    }
+
+    val activeContainerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
+        alpha = if (isDark) 0.20f else 0.40f
+    )
 
     val containerModifier = if (isSelected) {
         Modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(DashboardColors.SecondaryContainer.copy(alpha = 0.20f))
+            .background(activeContainerColor)
             .padding(horizontal = 12.dp, vertical = 4.dp)
     } else {
         Modifier

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -29,7 +31,6 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.ajvanegasv.kontio.presentation.dashboard.DashboardColors
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.GlassTokens
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.kontioGlass
 import dev.chrisbanes.haze.HazeStyle
@@ -47,25 +48,29 @@ fun DashboardTopAppBar(
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {}
 ) {
+    val isDark = isSystemInDarkTheme()
+    val bottomBorderColor = if (isDark) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.08f)
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .kontioGlass(
                 shape = RectangleShape,
                 style = {
+                    val surfaceColor = MaterialTheme.colorScheme.surfaceContainer
                     HazeStyle(
-                        backgroundColor = DashboardColors.SurfaceContainer.copy(alpha = 0.10f),
+                        backgroundColor = surfaceColor.copy(alpha = if (isDark) 0.10f else 0.40f),
                         blurRadius = 24.dp,
-                        tints = listOf(HazeTint(color = DashboardColors.SurfaceContainer.copy(alpha = 0.20f))),
+                        tints = listOf(HazeTint(color = surfaceColor.copy(alpha = if (isDark) 0.20f else 0.50f))),
                         noiseFactor = GlassTokens.NoiseFactor
                     )
                 },
                 borderBrush = null
             )
             .drawBehind {
-                // Borde inferior sutil (border-b border-white/10)
+                // Borde inferior sutil (border-b)
                 drawLine(
-                    color = Color.White.copy(alpha = 0.10f),
+                    color = bottomBorderColor,
                     start = Offset(0f, size.height),
                     end = Offset(size.width, size.height),
                     strokeWidth = 1.dp.toPx()
@@ -82,7 +87,7 @@ fun DashboardTopAppBar(
                 .align(Alignment.CenterStart)
                 .size(40.dp)
                 .clip(CircleShape)
-                .border(1.dp, Color.White.copy(alpha = 0.20f), CircleShape)
+                .border(1.dp, if (isDark) Color.White.copy(alpha = 0.20f) else Color.White.copy(alpha = 0.60f), CircleShape)
                 .background(
                     Brush.linearGradient(
                         colors = listOf(
@@ -110,7 +115,7 @@ fun DashboardTopAppBar(
         // Título central "Wallet"
         Text(
             text = "Wallet",
-            color = DashboardColors.Primary,
+            color = MaterialTheme.colorScheme.primary,
             fontSize = 24.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = (-0.5).sp,
@@ -133,7 +138,7 @@ fun DashboardTopAppBar(
             Icon(
                 imageVector = DashboardIcons.Notifications,
                 contentDescription = "Notifications",
-                tint = DashboardColors.Primary,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
         }

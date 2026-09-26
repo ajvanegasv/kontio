@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,7 +21,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.ajvanegasv.kontio.presentation.dashboard.DashboardColors
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 
 /**
@@ -43,7 +43,7 @@ fun QuickStatsSection(
             title = "INCOME",
             amount = incomeAmount,
             icon = DashboardIcons.ArrowUpward,
-            accentColor = DashboardColors.Secondary
+            accentColor = MaterialTheme.colorScheme.secondary
         )
 
         // Tarjeta Expenses
@@ -52,7 +52,7 @@ fun QuickStatsSection(
             title = "EXPENSES",
             amount = expensesAmount,
             icon = DashboardIcons.ArrowDownward,
-            accentColor = DashboardColors.Error
+            accentColor = MaterialTheme.colorScheme.error
         )
     }
 }
@@ -94,7 +94,7 @@ fun QuickStatCard(
 
             Text(
                 text = amount,
-                color = DashboardColors.OnSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.SemiBold
             )

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -43,13 +45,13 @@ data class DashboardTransaction(
     val amount: String,
     val isIncome: Boolean,
     val icon: ImageVector,
-    val iconBgColor: Color,
-    val iconBorderColor: Color,
-    val iconTintColor: Color
+    val iconBgColor: Color = Color.Unspecified,
+    val iconBorderColor: Color = Color.Unspecified,
+    val iconTintColor: Color = Color.Unspecified
 )
 
 /**
- * Lista por defecto correspondiente a las 4 transacciones del HTML.
+ * Lista por defecto correspondiente a las 4 transacciones del diseño.
  */
 fun defaultDashboardTransactions(): List<DashboardTransaction> {
     return listOf(
@@ -121,14 +123,14 @@ fun RecentTransactionsSection(
         ) {
             Text(
                 text = "Recent Transactions",
-                color = DashboardColors.OnSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
             )
 
             Text(
                 text = "See All",
-                color = DashboardColors.Primary,
+                color = MaterialTheme.colorScheme.primary,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier
@@ -165,6 +167,37 @@ fun TransactionCardItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isDark = isSystemInDarkTheme()
+    val isTertiary = transaction.category.equals("Entertainment", ignoreCase = true)
+
+    // Insignias dinámicas de iconos adaptativas según el tema
+    val badgeBgColor = if (isDark) {
+        if (transaction.iconBgColor != Color.Unspecified) transaction.iconBgColor
+        else if (isTertiary) DashboardColors.TertiaryContainer.copy(alpha = 0.20f)
+        else DashboardColors.SecondaryContainer.copy(alpha = 0.20f)
+    } else {
+        if (isTertiary) MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.60f)
+        else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.60f)
+    }
+
+    val badgeBorderColor = if (isDark) {
+        if (transaction.iconBorderColor != Color.Unspecified) transaction.iconBorderColor
+        else if (isTertiary) DashboardColors.TertiaryContainer.copy(alpha = 0.30f)
+        else DashboardColors.Secondary.copy(alpha = 0.30f)
+    } else {
+        if (isTertiary) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.25f)
+        else MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f)
+    }
+
+    val badgeTintColor = if (isDark) {
+        if (transaction.iconTintColor != Color.Unspecified) transaction.iconTintColor
+        else if (isTertiary) DashboardColors.TertiaryContainer
+        else DashboardColors.Secondary
+    } else {
+        if (isTertiary) MaterialTheme.colorScheme.tertiary
+        else MaterialTheme.colorScheme.secondary
+    }
+
     KontioGlassCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -179,19 +212,19 @@ fun TransactionCardItem(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Contenedor circular con borde y color temático
+                // Contenedor circular con borde y color temático adaptativo
                 Box(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(transaction.iconBgColor)
-                        .border(1.dp, transaction.iconBorderColor, CircleShape),
+                        .background(badgeBgColor)
+                        .border(1.dp, badgeBorderColor, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = transaction.icon,
                         contentDescription = transaction.title,
-                        tint = transaction.iconTintColor,
+                        tint = badgeTintColor,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -201,14 +234,14 @@ fun TransactionCardItem(
                 Column {
                     Text(
                         text = transaction.title,
-                        color = DashboardColors.OnSurface,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = transaction.category,
-                        color = DashboardColors.OnSurfaceVariant,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
                 }
@@ -217,7 +250,7 @@ fun TransactionCardItem(
             // Monto (Secondary para ingresos positivos, OnSurface para negativos)
             Text(
                 text = transaction.amount,
-                color = if (transaction.isIncome) DashboardColors.Secondary else DashboardColors.OnSurface,
+                color = if (transaction.isIncome) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )
