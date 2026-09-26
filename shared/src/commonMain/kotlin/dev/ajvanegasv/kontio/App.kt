@@ -3,16 +3,35 @@ package dev.ajvanegasv.kontio
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import dev.ajvanegasv.kontio.presentation.dashboard.Dashboard
+import dev.ajvanegasv.kontio.presentation.dashboard.DashboardColors
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF6366F1),
-    secondary = Color(0xFF10B981),
-    background = Color(0xFF0D1117),
-    surface = Color(0xFF161B22),
-    surfaceContainer = Color(0xFF21262D)
+    primary = DashboardColors.Primary,
+    onPrimary = DashboardColors.OnPrimary,
+    primaryContainer = DashboardColors.PrimaryContainer,
+    onPrimaryContainer = DashboardColors.OnPrimaryContainer,
+    inversePrimary = DashboardColors.InversePrimary,
+    secondary = DashboardColors.Secondary,
+    onSecondary = DashboardColors.OnSecondary,
+    secondaryContainer = DashboardColors.SecondaryContainer,
+    onSecondaryContainer = DashboardColors.OnSecondaryContainer,
+    tertiary = DashboardColors.Tertiary,
+    onTertiary = DashboardColors.OnTertiary,
+    tertiaryContainer = DashboardColors.TertiaryContainer,
+    onTertiaryContainer = DashboardColors.OnTertiaryContainer,
+    background = DashboardColors.Background,
+    onBackground = DashboardColors.OnBackground,
+    surface = DashboardColors.Surface,
+    onSurface = DashboardColors.OnSurface,
+    surfaceVariant = DashboardColors.SurfaceVariant,
+    onSurfaceVariant = DashboardColors.OnSurfaceVariant,
+    surfaceContainer = DashboardColors.SurfaceContainer,
+    surfaceContainerHigh = DashboardColors.SurfaceContainerHigh,
+    surfaceContainerHighest = DashboardColors.SurfaceContainerHighest,
+    error = DashboardColors.Error,
+    onError = DashboardColors.OnError
 )
 
 @Composable
