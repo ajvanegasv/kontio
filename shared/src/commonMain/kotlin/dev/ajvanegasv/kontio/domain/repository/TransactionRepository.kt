@@ -1,0 +1,14 @@
+package dev.ajvanegasv.kontio.domain.repository
+
+import dev.ajvanegasv.kontio.domain.model.Transaction
+import kotlinx.coroutines.flow.Flow
+
+interface TransactionRepository {
+    fun getRecentTransactions(limit: Int = 20): Flow<List<Transaction>>
+    fun getAllTransactions(): Flow<List<Transaction>>
+    fun getTransactionsByAccount(accountId: String): Flow<List<Transaction>>
+    fun getTransactionsInDateRange(startDate: Long, endDate: Long): Flow<List<Transaction>>
+    suspend fun insertTransaction(transaction: Transaction)
+    suspend fun deleteTransaction(id: String)
+    suspend fun getTransactionsCount(): Int
+}

@@ -1,0 +1,260 @@
+package dev.ajvanegasv.kontio.presentation.accounts.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import dev.ajvanegasv.kontio.domain.model.AccountType
+import dev.ajvanegasv.kontio.presentation.designsystem.glass.GlassTokens
+import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
+
+@Composable
+fun AddAccountBottomSheet(
+    onDismiss: () -> Unit,
+    onSaveAccount: (name: String, type: AccountType, balance: Double, creditLimit: Double?, colorHex: String) -> Unit,
+    errorMessage: String? = null,
+    modifier: Modifier = Modifier
+) {
+    val isDark = isSystemInDarkTheme()
+    var name by remember { mutableStateOf("") }
+    var selectedType by remember { mutableStateOf(AccountType.SAVINGS) }
+    var balanceString by remember { mutableStateOf("0") }
+    var creditLimitString by remember { mutableStateOf("1000") }
+    val colors = listOf("#3B82F6", "#10B981", "#8B5CF6", "#F59E0B", "#EC4899", "#1E293B")
+    var selectedColor by remember { mutableStateOf(colors[0]) }
+
+    KontioGlassCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        elevation = GlassTokens.DockElevation,
+        contentPadding = PaddingValues(20.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Tirador
+            Box(
+                modifier = Modifier
+                    .size(width = 40.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Nuevo Producto Bancario",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Nombre
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Nombre de la cuenta o tarjeta") },
+                placeholder = { Text("Ej: Ahorros Bancolombia, Visa Infinite...") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Selector de Tipo de Producto
+            Text(
+                text = "Tipo de producto:",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.Start)
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                val types = listOf(
+                    AccountType.SAVINGS to "Ahorros",
+                    AccountType.CREDIT_CARD to "T. Crédito",
+                    AccountType.CASH to "Efectivo",
+                    AccountType.DIGITAL_WALLET to "Billetera"
+                )
+
+                types.forEach { (type, label) ->
+                    val isSelected = selectedType == type
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.25f)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .clickable { selectedType = type }
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = label,
+                            fontSize = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Saldo Inicial
+            OutlinedTextField(
+                value = balanceString,
+                onValueChange = { balanceString = it },
+                label = { Text(if (selectedType == AccountType.CREDIT_CARD) "Saldo consumido / Deuda actual" else "Saldo inicial disponible") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                )
+            )
+
+            if (selectedType == AccountType.CREDIT_CARD) {
+                Spacer(modifier = Modifier.height(12.dp))
+                // Cupo total
+                OutlinedTextField(
+                    value = creditLimitString,
+                    onValueChange = { creditLimitString = it },
+                    label = { Text("Cupo límite de la tarjeta") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Selector de Color Glass
+            Text(
+                text = "Color de la tarjeta:",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.Start)
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                colors.forEach { hex ->
+                    val color = Color(
+                        red = hex.substring(1, 3).toInt(16) / 255f,
+                        green = hex.substring(3, 5).toInt(16) / 255f,
+                        blue = hex.substring(5, 7).toInt(16) / 255f
+                    )
+                    val isSelected = selectedColor == hex
+
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                            .border(
+                                width = if (isSelected) 3.dp else 1.dp,
+                                color = if (isSelected) Color.White else Color.Transparent,
+                                shape = CircleShape
+                            )
+                            .clickable { selectedColor = hex }
+                    )
+                }
+            }
+
+            if (errorMessage != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 12.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Button(
+                onClick = {
+                    val bal = balanceString.toDoubleOrNull() ?: 0.0
+                    val limit = if (selectedType == AccountType.CREDIT_CARD) {
+                        creditLimitString.toDoubleOrNull() ?: 0.0
+                    } else null
+
+                    onSaveAccount(name, selectedType, bal, limit, selectedColor)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(
+                    text = "Crear Cuenta",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp
+                )
+            }
+        }
+    }
+}

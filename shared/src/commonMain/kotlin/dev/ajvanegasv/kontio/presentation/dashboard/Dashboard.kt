@@ -1,6 +1,7 @@
 package dev.ajvanegasv.kontio.presentation.dashboard
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,6 +22,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.ajvanegasv.kontio.presentation.accounts.AccountsScreen
+import dev.ajvanegasv.kontio.presentation.accounts.AccountsViewModel
+import dev.ajvanegasv.kontio.presentation.backup.BackupViewModel
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardBottomNavBar
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardTab
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardTopAppBar
@@ -27,34 +33,38 @@ import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardTransact
 import dev.ajvanegasv.kontio.presentation.dashboard.components.MainBalanceCard
 import dev.ajvanegasv.kontio.presentation.dashboard.components.QuickStatsSection
 import dev.ajvanegasv.kontio.presentation.dashboard.components.RecentTransactionsSection
-import dev.ajvanegasv.kontio.presentation.dashboard.components.defaultDashboardTransactions
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.LocalHazeState
 import dev.ajvanegasv.kontio.presentation.designsystem.theme.LocalKontioMeshColors
+import dev.ajvanegasv.kontio.presentation.profile.ProfileScreen
+import dev.ajvanegasv.kontio.presentation.transactions.TransactionViewModel
+import dev.ajvanegasv.kontio.presentation.transactions.components.AddTransactionBottomSheet
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 
 typealias Transaction = DashboardTransaction
 
 /**
- * Pantalla principal del Dashboard de finanzas personales, replicando fielmente
- * el diseño y efectos visuales de cristal esmerilado (Glassmorphism) tanto en modo Claro como Oscuro.
+ * Pantalla principal de Kontio conectada a la base de datos local y ViewModels reactivos,
+ * conservando la estética Glassmorphism y navegación entre Dashboard, Cuentas, y Backups de Google Drive.
  */
 @Composable
 @Preview
 fun Dashboard(
     modifier: Modifier = Modifier,
-    balance: String = "$12,450.80",
-    incomeAmount: String = "$4,200.00",
-    expensesAmount: String = "$1,840.50",
-    transactions: List<DashboardTransaction> = remember { defaultDashboardTransactions() },
-    onAddFundsClick: () -> Unit = {},
+    dashboardViewModel: DashboardViewModel = viewModel { DashboardViewModel() },
+    accountsViewModel: AccountsViewModel = viewModel { AccountsViewModel() },
+    transactionViewModel: TransactionViewModel = viewModel { TransactionViewModel() },
+    backupViewModel: BackupViewModel = viewModel { BackupViewModel() },
     onNotificationClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {},
     onSeeAllTransactionsClick: () -> Unit = {},
     onTransactionClick: (DashboardTransaction) -> Unit = {}
 ) {
     val hazeState = remember { HazeState() }
-    var selectedTab by remember { mutableStateOf(DashboardTab.CARDS) }
+    var selectedTab by remember { mutableStateOf(DashboardTab.HOME) }
+    var isAddTransactionOpen by remember { mutableStateOf(false) }
+
+    val dashboardState by dashboardViewModel.uiState.collectAsState()
+    val txCreationState by transactionViewModel.uiState.collectAsState()
 
     CompositionLocalProvider(LocalHazeState provides hazeState) {
         Box(
@@ -67,42 +77,89 @@ fun Dashboard(
                 modifier = Modifier.hazeSource(state = hazeState, zIndex = -1f)
             )
 
-            // Contenido desplazable (registrado en Haze para efecto de desenfoque en tiempo real)
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .hazeSource(state = hazeState, zIndex = 0f),
-                contentPadding = PaddingValues(
-                    top = 84.dp,     // pt-24 (espacio para el Header fijo superior)
-                    bottom = 100.dp, // pb-24 (espacio para la BottomNavBar fija inferior)
-                    start = 20.dp,   // px-container-padding-mobile
-                    end = 20.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(32.dp) // space-y-stack-lg (32px)
-            ) {
-                // 1. Tarjeta de balance principal
-                item {
-                    MainBalanceCard(
-                        balance = balance,
-                        onAddFundsClick = onAddFundsClick
+            // Contenido según la pestaña activa
+            when (selectedTab) {
+                DashboardTab.HOME -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .hazeSource(state = hazeState, zIndex = 0f),
+                        contentPadding = PaddingValues(
+                            top = 84.dp,     // Espacio para Header fijo superior
+                            bottom = 100.dp, // Espacio para BottomNavBar fija inferior
+                            start = 20.dp,
+                            end = 20.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(32.dp)
+                    ) {
+                        // 1. Tarjeta de balance principal consolidado en tiempo real
+                        item {
+                            MainBalanceCard(
+                                balance = dashboardState.balance,
+                                onAddFundsClick = { isAddTransactionOpen = true }
+                            )
+                        }
+
+                        // 2. Sección de estadísticas rápidas (Ingresos y Gastos del mes)
+                        item {
+                            QuickStatsSection(
+                                incomeAmount = dashboardState.incomeAmount,
+                                expensesAmount = dashboardState.expensesAmount
+                            )
+                        }
+
+                        // 3. Sección de transacciones recientes desde Room DB
+                        item {
+                            RecentTransactionsSection(
+                                transactions = dashboardState.transactions,
+                                onSeeAllClick = onSeeAllTransactionsClick,
+                                onTransactionClick = onTransactionClick
+                            )
+                        }
+                    }
+                }
+
+                DashboardTab.CARDS -> {
+                    AccountsScreen(
+                        viewModel = accountsViewModel,
+                        modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
                     )
                 }
 
-                // 2. Sección de estadísticas rápidas (Ingresos y Gastos)
-                item {
-                    QuickStatsSection(
-                        incomeAmount = incomeAmount,
-                        expensesAmount = expensesAmount
+                DashboardTab.PROFILE -> {
+                    ProfileScreen(
+                        backupViewModel = backupViewModel,
+                        modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
                     )
                 }
 
-                // 3. Sección de transacciones recientes
-                item {
-                    RecentTransactionsSection(
-                        transactions = transactions,
-                        onSeeAllClick = onSeeAllTransactionsClick,
-                        onTransactionClick = onTransactionClick
-                    )
+                DashboardTab.STATS -> {
+                    // Vista rápida de estadísticas financieras
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .hazeSource(state = hazeState, zIndex = 0f),
+                        contentPadding = PaddingValues(top = 90.dp, bottom = 100.dp, start = 20.dp, end = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        item {
+                            QuickStatsSection(
+                                incomeAmount = dashboardState.incomeAmount,
+                                expensesAmount = dashboardState.expensesAmount
+                            )
+                        }
+                        item {
+                            RecentTransactionsSection(
+                                transactions = dashboardState.transactions,
+                                onSeeAllClick = onSeeAllTransactionsClick,
+                                onTransactionClick = onTransactionClick
+                            )
+                        }
+                    }
+                }
+
+                DashboardTab.ADD -> {
+                    // El botón ADD en el navbar abre directamente el modal
                 }
             }
 
@@ -110,15 +167,48 @@ fun Dashboard(
             DashboardTopAppBar(
                 modifier = Modifier.align(Alignment.TopCenter),
                 onNotificationClick = onNotificationClick,
-                onProfileClick = onProfileClick
+                onProfileClick = { selectedTab = DashboardTab.PROFILE }
             )
 
             // BottomNavBar esmerilada fija inferior
             DashboardBottomNavBar(
                 modifier = Modifier.align(Alignment.BottomCenter),
                 selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it }
+                onTabSelected = { tab ->
+                    if (tab == DashboardTab.ADD) {
+                        isAddTransactionOpen = true
+                    } else {
+                        selectedTab = tab
+                    }
+                }
             )
+
+            // Modal inferior de Registro de Transacción
+            if (isAddTransactionOpen) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.5f))
+                        .clickable { isAddTransactionOpen = false },
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    AddTransactionBottomSheet(
+                        state = txCreationState,
+                        onTypeSelect = { transactionViewModel.setTransactionType(it) },
+                        onNumberPadClick = { transactionViewModel.onNumberPadClick(it) },
+                        onBackspaceClick = { transactionViewModel.onBackspaceClick() },
+                        onAccountSelect = { transactionViewModel.selectAccount(it) },
+                        onCategorySelect = { transactionViewModel.selectCategory(it) },
+                        onNoteChange = { transactionViewModel.setNote(it) },
+                        onSubmit = {
+                            transactionViewModel.submitTransaction(
+                                onSuccess = { isAddTransactionOpen = false }
+                            )
+                        },
+                        onDismiss = { isAddTransactionOpen = false }
+                    )
+                }
+            }
         }
     }
 }
