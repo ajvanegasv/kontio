@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 
 data class TransactionCreationUiState(
     val type: TransactionType = TransactionType.EXPENSE,
@@ -149,7 +148,7 @@ class TransactionViewModel(
             _isSubmitting.value = true
             _errorMessage.value = null
 
-            val now = Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
             val newTx = Transaction(
                 id = "tx_${now}_${(100..999).random()}",
                 accountId = accountId,
