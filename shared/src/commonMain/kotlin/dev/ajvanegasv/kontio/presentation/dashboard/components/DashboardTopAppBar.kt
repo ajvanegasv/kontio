@@ -56,6 +56,7 @@ fun DashboardTopAppBar(
             .fillMaxWidth()
             .kontioGlass(
                 shape = RectangleShape,
+                elevation = GlassTokens.TopAppBarElevation,
                 style = {
                     val surfaceColor = MaterialTheme.colorScheme.surfaceContainer
                     HazeStyle(

@@ -24,11 +24,42 @@ object GlassTokens {
     val DockCornerRadius: Dp = 32.dp
     val ChipCornerRadius: Dp = 12.dp
 
+    // Elevaciones
+    val CardElevation: Dp = 6.dp
+    val HeroCardElevation: Dp = 10.dp
+    val DockElevation: Dp = 12.dp
+    val TopAppBarElevation: Dp = 4.dp
+    val ChipElevation: Dp = 2.dp
+    val ModalElevation: Dp = 16.dp
+
     // Parámetros de renderizado Haze
     const val NoiseFactor: Float = 0.08f
     val CardBlurRadius: Dp = 22.dp
     val DockBlurRadius: Dp = 18.dp
     val ModalBlurRadius: Dp = 30.dp
+
+    /**
+     * Helpers de color para sombras adaptativas con matiz slate-900 en Light Mode.
+     */
+    @Composable
+    fun shadowAmbientColor(): Color {
+        val isDark = isSystemInDarkTheme()
+        return if (isDark) {
+            Color.Black.copy(alpha = 0.40f)
+        } else {
+            Color(0xFF0F172A).copy(alpha = 0.06f)
+        }
+    }
+
+    @Composable
+    fun shadowSpotColor(): Color {
+        val isDark = isSystemInDarkTheme()
+        return if (isDark) {
+            Color.Black.copy(alpha = 0.60f)
+        } else {
+            Color(0xFF0F172A).copy(alpha = 0.12f)
+        }
+    }
 
     /**
      * Estilo esmerilado para tarjetas de cuentas, saldos y métricas financieras.
@@ -38,9 +69,9 @@ object GlassTokens {
     fun cardStyle(): HazeStyle {
         val isDark = isSystemInDarkTheme()
         val surface = MaterialTheme.colorScheme.surface
-        val alpha = if (isDark) 0.60f else 0.75f
+        val alpha = if (isDark) 0.60f else 0.55f
         return HazeStyle(
-            backgroundColor = surface,
+            backgroundColor = Color.Transparent,
             blurRadius = CardBlurRadius,
             tints = listOf(HazeTint(color = surface.copy(alpha = alpha))),
             noiseFactor = NoiseFactor
@@ -54,9 +85,9 @@ object GlassTokens {
     fun dockStyle(): HazeStyle {
         val isDark = isSystemInDarkTheme()
         val surface = MaterialTheme.colorScheme.surfaceContainer
-        val alpha = if (isDark) 0.55f else 0.70f
+        val alpha = if (isDark) 0.55f else 0.60f
         return HazeStyle(
-            backgroundColor = surface,
+            backgroundColor = Color.Transparent,
             blurRadius = DockBlurRadius,
             tints = listOf(HazeTint(color = surface.copy(alpha = alpha))),
             noiseFactor = NoiseFactor
@@ -70,9 +101,9 @@ object GlassTokens {
     fun topAppBarStyle(): HazeStyle {
         val isDark = isSystemInDarkTheme()
         val surface = MaterialTheme.colorScheme.surface
-        val alpha = if (isDark) 0.50f else 0.65f
+        val alpha = if (isDark) 0.50f else 0.55f
         return HazeStyle(
-            backgroundColor = surface,
+            backgroundColor = Color.Transparent,
             blurRadius = 16.dp,
             tints = listOf(HazeTint(color = surface.copy(alpha = alpha))),
             noiseFactor = NoiseFactor
@@ -95,8 +126,9 @@ object GlassTokens {
         } else {
             Brush.verticalGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = 0.85f),
-                    Color.White.copy(alpha = 0.30f)
+                    Color.White.copy(alpha = 0.95f),
+                    Color(0xFFE2E8F0).copy(alpha = 0.60f),
+                    Color(0xFF94A3B8).copy(alpha = 0.35f)
                 )
             )
         }

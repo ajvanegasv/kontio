@@ -9,9 +9,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeStyle
 
@@ -24,15 +25,20 @@ fun KontioGlassDock(
     shape: Shape = RoundedCornerShape(GlassTokens.DockCornerRadius),
     style: @Composable () -> HazeStyle = { GlassTokens.dockStyle() },
     borderBrush: (@Composable () -> Brush)? = { GlassTokens.specularBorderBrush() },
+    elevation: Dp = GlassTokens.DockElevation,
+    shadowAmbientColor: Color? = null,
+    shadowSpotColor: Color? = null,
     content: @Composable RowScope.() -> Unit
 ) {
     Box(
         modifier = modifier
-            .clip(shape)
             .kontioGlass(
                 shape = shape,
                 style = style,
-                borderBrush = borderBrush
+                borderBrush = borderBrush,
+                elevation = elevation,
+                shadowAmbientColor = shadowAmbientColor,
+                shadowSpotColor = shadowSpotColor
             )
             .padding(horizontal = 20.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center

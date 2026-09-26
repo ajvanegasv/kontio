@@ -63,13 +63,15 @@ fun Dashboard(
                 .background(MaterialTheme.colorScheme.background)
         ) {
             // Fondo ambiental Mesh-gradient adaptativo según el tema actual
-            DashboardMeshBackground()
+            DashboardMeshBackground(
+                modifier = Modifier.hazeSource(state = hazeState, zIndex = -1f)
+            )
 
             // Contenido desplazable (registrado en Haze para efecto de desenfoque en tiempo real)
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .hazeSource(hazeState),
+                    .hazeSource(state = hazeState, zIndex = 0f),
                 contentPadding = PaddingValues(
                     top = 84.dp,     // pt-24 (espacio para el Header fijo superior)
                     bottom = 100.dp, // pb-24 (espacio para la BottomNavBar fija inferior)

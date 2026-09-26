@@ -14,6 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeStyle
 
@@ -29,6 +31,9 @@ fun KontioGlassTopAppBar(
     title: @Composable () -> Unit,
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
+    elevation: Dp = GlassTokens.TopAppBarElevation,
+    shadowAmbientColor: Color? = null,
+    shadowSpotColor: Color? = null,
     style: @Composable () -> HazeStyle = { GlassTokens.topAppBarStyle() },
     borderBrush: (@Composable () -> Brush)? = null
 ) {
@@ -38,7 +43,10 @@ fun KontioGlassTopAppBar(
             .kontioGlass(
                 shape = RectangleShape,
                 style = style,
-                borderBrush = borderBrush
+                borderBrush = borderBrush,
+                elevation = elevation,
+                shadowAmbientColor = shadowAmbientColor,
+                shadowSpotColor = shadowSpotColor
             )
             .windowInsetsPadding(WindowInsets.statusBars)
             .height(64.dp)

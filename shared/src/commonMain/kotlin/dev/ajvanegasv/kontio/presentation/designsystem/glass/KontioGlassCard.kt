@@ -8,9 +8,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeStyle
 
@@ -26,6 +27,9 @@ fun KontioGlassCard(
     shape: Shape = RoundedCornerShape(GlassTokens.CardCornerRadius),
     style: @Composable () -> HazeStyle = { GlassTokens.cardStyle() },
     borderBrush: (@Composable () -> Brush)? = { GlassTokens.specularBorderBrush() },
+    elevation: Dp = GlassTokens.CardElevation,
+    shadowAmbientColor: Color? = null,
+    shadowSpotColor: Color? = null,
     contentPadding: PaddingValues = PaddingValues(16.dp),
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit
@@ -38,11 +42,13 @@ fun KontioGlassCard(
 
     Box(
         modifier = modifier
-            .clip(shape)
             .kontioGlass(
                 shape = shape,
                 style = style,
-                borderBrush = borderBrush
+                borderBrush = borderBrush,
+                elevation = elevation,
+                shadowAmbientColor = shadowAmbientColor,
+                shadowSpotColor = shadowSpotColor
             )
             .then(clickModifier)
             .padding(contentPadding),

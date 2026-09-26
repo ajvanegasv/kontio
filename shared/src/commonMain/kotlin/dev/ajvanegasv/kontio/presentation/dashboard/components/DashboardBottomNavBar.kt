@@ -67,6 +67,7 @@ fun DashboardBottomNavBar(
             .fillMaxWidth()
             .kontioGlass(
                 shape = navShape,
+                elevation = GlassTokens.DockElevation,
                 style = {
                     val surfaceColor = MaterialTheme.colorScheme.surfaceContainer
                     HazeStyle(

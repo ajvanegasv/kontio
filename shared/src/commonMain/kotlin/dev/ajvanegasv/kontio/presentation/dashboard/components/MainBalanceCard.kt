@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.ajvanegasv.kontio.presentation.designsystem.glass.GlassTokens
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 
 /**
@@ -47,7 +48,7 @@ fun MainBalanceCard(
     onAddFundsClick: () -> Unit = {}
 ) {
     val isDark = isSystemInDarkTheme()
-    val glowAlpha = if (isDark) 0.25f else 0.12f
+    val glowAlpha = if (isDark) 0.25f else 0.18f
     val buttonGradientColors = if (isDark) {
         listOf(MaterialTheme.colorScheme.inversePrimary, MaterialTheme.colorScheme.secondaryContainer)
     } else {
@@ -67,6 +68,7 @@ fun MainBalanceCard(
     KontioGlassCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
+        elevation = GlassTokens.HeroCardElevation,
         contentPadding = PaddingValues(24.dp)
     ) {
         // Orbe sutil con gradiente radial detrás del texto de balance
