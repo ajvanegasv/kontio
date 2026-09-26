@@ -32,7 +32,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.ajvanegasv.kontio.presentation.dashboard.DashboardColors
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 
 /**
@@ -61,10 +60,7 @@ fun defaultDashboardTransactions(): List<DashboardTransaction> {
             category = "Entertainment",
             amount = "-$15.99",
             isIncome = false,
-            icon = DashboardIcons.LiveTv,
-            iconBgColor = DashboardColors.TertiaryContainer.copy(alpha = 0.20f),
-            iconBorderColor = DashboardColors.TertiaryContainer.copy(alpha = 0.30f),
-            iconTintColor = DashboardColors.TertiaryContainer
+            icon = DashboardIcons.LiveTv
         ),
         DashboardTransaction(
             id = "tx-2",
@@ -72,10 +68,7 @@ fun defaultDashboardTransactions(): List<DashboardTransaction> {
             category = "Food",
             amount = "-$84.20",
             isIncome = false,
-            icon = DashboardIcons.ShoppingCart,
-            iconBgColor = DashboardColors.SecondaryContainer.copy(alpha = 0.20f),
-            iconBorderColor = DashboardColors.Secondary.copy(alpha = 0.30f),
-            iconTintColor = DashboardColors.Secondary
+            icon = DashboardIcons.ShoppingCart
         ),
         DashboardTransaction(
             id = "tx-3",
@@ -83,10 +76,7 @@ fun defaultDashboardTransactions(): List<DashboardTransaction> {
             category = "Income",
             amount = "+$2,100.00",
             isIncome = true,
-            icon = DashboardIcons.AccountBalanceWallet,
-            iconBgColor = DashboardColors.Secondary.copy(alpha = 0.20f),
-            iconBorderColor = DashboardColors.Secondary.copy(alpha = 0.30f),
-            iconTintColor = DashboardColors.Secondary
+            icon = DashboardIcons.AccountBalanceWallet
         ),
         DashboardTransaction(
             id = "tx-4",
@@ -94,10 +84,7 @@ fun defaultDashboardTransactions(): List<DashboardTransaction> {
             category = "Food",
             amount = "-$4.50",
             isIncome = false,
-            icon = DashboardIcons.LocalCafe,
-            iconBgColor = DashboardColors.SecondaryContainer.copy(alpha = 0.20f),
-            iconBorderColor = DashboardColors.Secondary.copy(alpha = 0.30f),
-            iconTintColor = DashboardColors.Secondary
+            icon = DashboardIcons.LocalCafe
         )
     )
 }
@@ -171,28 +158,31 @@ fun TransactionCardItem(
     val isTertiary = transaction.category.equals("Entertainment", ignoreCase = true)
 
     // Insignias dinámicas de iconos adaptativas según el tema
-    val badgeBgColor = if (isDark) {
-        if (transaction.iconBgColor != Color.Unspecified) transaction.iconBgColor
-        else if (isTertiary) DashboardColors.TertiaryContainer.copy(alpha = 0.20f)
-        else DashboardColors.SecondaryContainer.copy(alpha = 0.20f)
+    val badgeBgColor = if (transaction.iconBgColor != Color.Unspecified) {
+        transaction.iconBgColor
+    } else if (isDark) {
+        if (isTertiary) MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.20f)
+        else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.20f)
     } else {
         if (isTertiary) MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.60f)
         else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.60f)
     }
 
-    val badgeBorderColor = if (isDark) {
-        if (transaction.iconBorderColor != Color.Unspecified) transaction.iconBorderColor
-        else if (isTertiary) DashboardColors.TertiaryContainer.copy(alpha = 0.30f)
-        else DashboardColors.Secondary.copy(alpha = 0.30f)
+    val badgeBorderColor = if (transaction.iconBorderColor != Color.Unspecified) {
+        transaction.iconBorderColor
+    } else if (isDark) {
+        if (isTertiary) MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.30f)
+        else MaterialTheme.colorScheme.secondary.copy(alpha = 0.30f)
     } else {
         if (isTertiary) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.25f)
         else MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f)
     }
 
-    val badgeTintColor = if (isDark) {
-        if (transaction.iconTintColor != Color.Unspecified) transaction.iconTintColor
-        else if (isTertiary) DashboardColors.TertiaryContainer
-        else DashboardColors.Secondary
+    val badgeTintColor = if (transaction.iconTintColor != Color.Unspecified) {
+        transaction.iconTintColor
+    } else if (isDark) {
+        if (isTertiary) MaterialTheme.colorScheme.tertiaryContainer
+        else MaterialTheme.colorScheme.secondary
     } else {
         if (isTertiary) MaterialTheme.colorScheme.tertiary
         else MaterialTheme.colorScheme.secondary

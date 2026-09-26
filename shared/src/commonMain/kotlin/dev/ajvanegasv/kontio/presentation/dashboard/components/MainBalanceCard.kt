@@ -31,7 +31,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.ajvanegasv.kontio.presentation.dashboard.DashboardColors
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 
 /**
@@ -50,17 +49,17 @@ fun MainBalanceCard(
     val isDark = isSystemInDarkTheme()
     val glowAlpha = if (isDark) 0.25f else 0.12f
     val buttonGradientColors = if (isDark) {
-        listOf(DashboardColors.InversePrimary, DashboardColors.SecondaryContainer)
+        listOf(MaterialTheme.colorScheme.inversePrimary, MaterialTheme.colorScheme.secondaryContainer)
     } else {
         listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
     }
     val buttonShadowSpotColor = if (isDark) {
-        DashboardColors.SecondaryContainer.copy(alpha = 0.5f)
+        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
     } else {
         MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
     }
     val buttonShadowAmbientColor = if (isDark) {
-        DashboardColors.SecondaryContainer.copy(alpha = 0.3f)
+        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
     } else {
         MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
     }

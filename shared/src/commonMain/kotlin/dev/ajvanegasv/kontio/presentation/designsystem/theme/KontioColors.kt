@@ -28,15 +28,23 @@ val DarkColorScheme = darkColorScheme(
     onBackground = DashboardColors.OnBackground,
     surface = DashboardColors.Surface,
     onSurface = DashboardColors.OnSurface,
+    surfaceDim = DashboardColors.SurfaceDim,
+    surfaceBright = DashboardColors.SurfaceBright,
     surfaceVariant = DashboardColors.SurfaceVariant,
     onSurfaceVariant = DashboardColors.OnSurfaceVariant,
+    surfaceContainerLowest = DashboardColors.SurfaceContainerLowest,
+    surfaceContainerLow = DashboardColors.SurfaceContainerLow,
     surfaceContainer = DashboardColors.SurfaceContainer,
     surfaceContainerHigh = DashboardColors.SurfaceContainerHigh,
     surfaceContainerHighest = DashboardColors.SurfaceContainerHighest,
+    inverseSurface = DashboardColors.InverseSurface,
+    inverseOnSurface = DashboardColors.InverseOnSurface,
     outline = DashboardColors.Outline,
     outlineVariant = DashboardColors.OutlineVariant,
     error = DashboardColors.Error,
-    onError = DashboardColors.OnError
+    onError = DashboardColors.OnError,
+    errorContainer = DashboardColors.ErrorContainer,
+    onErrorContainer = DashboardColors.OnErrorContainer
 )
 
 /**
@@ -47,6 +55,7 @@ val LightColorScheme = lightColorScheme(
     surface = Color(0xFFFFFFFF),
     surfaceContainer = Color(0xFFF1F5F9),
     surfaceContainerHigh = Color(0xFFE2E8F0),
+    surfaceContainerHighest = Color(0xFFCBD5E1),
     onBackground = Color(0xFF0F172A),
     onSurface = Color(0xFF0F172A),
     onSurfaceVariant = Color(0xFF64748B),
@@ -54,6 +63,7 @@ val LightColorScheme = lightColorScheme(
     onPrimary = Color(0xFFFFFFFF),
     primaryContainer = Color(0xFFE0E7FF),
     onPrimaryContainer = Color(0xFF1E1B4B),
+    inversePrimary = Color(0xFF818CF8),
     secondary = Color(0xFF0D9488),
     onSecondary = Color(0xFFFFFFFF),
     secondaryContainer = Color(0xFFCCFBF1),
@@ -65,7 +75,9 @@ val LightColorScheme = lightColorScheme(
     outline = Color(0xFF94A3B8),
     outlineVariant = Color(0xFFCBD5E1),
     error = Color(0xFFDC2626),
-    onError = Color(0xFFFFFFFF)
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFFFEE2E2),
+    onErrorContainer = Color(0xFF991B1B)
 )
 
 /**
