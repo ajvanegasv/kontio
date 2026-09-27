@@ -23,12 +23,21 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,6 +54,7 @@ import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 import dev.ajvanegasv.kontio.presentation.transactions.TransactionCreationUiState
 import dev.ajvanegasv.kontio.presentation.util.IconMapper
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTransactionBottomSheet(
     state: TransactionCreationUiState,
@@ -53,12 +63,14 @@ fun AddTransactionBottomSheet(
     onBackspaceClick: () -> Unit,
     onAccountSelect: (String) -> Unit,
     onCategorySelect: (String) -> Unit,
+    onDateSelect: (Long) -> Unit = {},
     onNoteChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme()
+    var showDatePickerDialog by remember { mutableStateOf(false) }
 
     KontioGlassCard(
         modifier = modifier
@@ -243,6 +255,152 @@ fun AddTransactionBottomSheet(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Selector de Fecha
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Fecha de movimiento:",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // Chip / Botón de fecha actual seleccionada
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = if (isDark) 0.35f else 0.6f))
+                        .clickable { showDatePickerDialog = true }
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = DashboardIcons.CalendarToday,
+                        contentDescription = "Elegir fecha",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = state.formattedDate,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Píldoras rápidas de fecha: Hoy | Ayer | Elegir fecha...
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val oneDayMillis = 86_400_000L
+
+                // Hoy
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (isDark) 0.25f else 0.5f))
+                        .clickable { onDateSelect(kotlin.time.Clock.System.now().toEpochMilliseconds()) }
+                        .padding(vertical = 7.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Hoy",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                // Ayer
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (isDark) 0.25f else 0.5f))
+                        .clickable {
+                            val yesterday = kotlin.time.Clock.System.now().toEpochMilliseconds() - oneDayMillis
+                            onDateSelect(yesterday)
+                        }
+                        .padding(vertical = 7.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Ayer",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                // Otra fecha (abre calendario)
+                Box(
+                    modifier = Modifier
+                        .weight(1.3f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (isDark) 0.35f else 0.6f))
+                        .clickable { showDatePickerDialog = true }
+                        .padding(vertical = 7.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = DashboardIcons.CalendarToday,
+                            contentDescription = null,
+                            modifier = Modifier.size(13.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Otra fecha",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
+            // Diálogo DatePicker de Material 3
+            if (showDatePickerDialog) {
+                val datePickerState = rememberDatePickerState(
+                    initialSelectedDateMillis = if (state.timestamp > 0L) state.timestamp else kotlin.time.Clock.System.now().toEpochMilliseconds()
+                )
+                DatePickerDialog(
+                    onDismissRequest = { showDatePickerDialog = false },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                datePickerState.selectedDateMillis?.let { selectedMillis ->
+                                    onDateSelect(selectedMillis)
+                                }
+                                showDatePickerDialog = false
+                            }
+                        ) {
+                            Text("Aceptar", fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDatePickerDialog = false }) {
+                            Text("Cancelar")
+                        }
+                    }
+                ) {
+                    DatePicker(state = datePickerState)
                 }
             }
 

@@ -28,4 +28,16 @@ class DateFormatterTest {
         assertTrue(time.contains(":"))
         assertEquals(5, time.length)
     }
+
+    @Test
+    fun testFormatDisplayDateForTodayAndYesterday() {
+        val now = Clock.System.now().toEpochMilliseconds()
+        val todayStr = DateFormatter.formatDisplayDate(now)
+        assertTrue(todayStr.startsWith("Hoy"))
+
+        val yesterday = now - 86_400_000L
+        val yesterdayStr = DateFormatter.formatDisplayDate(yesterday)
+        assertTrue(yesterdayStr.startsWith("Ayer"))
+    }
 }
+

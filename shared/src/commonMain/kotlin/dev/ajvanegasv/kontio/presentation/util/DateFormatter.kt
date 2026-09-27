@@ -28,6 +28,19 @@ object DateFormatter {
         }
     }
 
+    fun formatDisplayDate(timestamp: Long): String {
+        val timeZone = TimeZone.currentSystemDefault()
+        val today = Clock.System.now().toLocalDateTime(timeZone).date
+        val txDate = toLocalDate(timestamp)
+
+        return when {
+            txDate == today -> "Hoy (${txDate.dayOfMonth} de ${getSpanishMonthName(txDate.monthNumber)})"
+            txDate.toEpochDays() == today.toEpochDays() - 1 -> "Ayer (${txDate.dayOfMonth} de ${getSpanishMonthName(txDate.monthNumber)})"
+            else -> "${txDate.dayOfMonth} de ${getSpanishMonthName(txDate.monthNumber)}, ${txDate.year}"
+        }
+    }
+
+
     fun formatTime(timestamp: Long): String {
         val timeZone = TimeZone.currentSystemDefault()
         val ldt = Instant.fromEpochMilliseconds(timestamp).toLocalDateTime(timeZone)

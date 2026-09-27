@@ -107,6 +107,11 @@ fun Dashboard(
                         selectedTab = selectedTab,
                         onTabSelected = { tab ->
                             if (tab == DashboardTab.ADD) {
+                                val activeAccountId = accountsState.selectedAccountId
+                                transactionViewModel.prepareTransaction(
+                                    type = TransactionType.EXPENSE,
+                                    accountId = activeAccountId
+                                )
                                 isAddTransactionOpen = true
                             } else {
                                 isShowingTransactions = false
@@ -204,6 +209,10 @@ fun Dashboard(
                         DashboardTab.CARDS -> {
                             AccountsScreen(
                                 viewModel = accountsViewModel,
+                                onAddTransactionForAccount = { accountId, type ->
+                                    transactionViewModel.prepareTransaction(type = type, accountId = accountId)
+                                    isAddTransactionOpen = true
+                                },
                                 modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
                             )
                         }
@@ -268,6 +277,7 @@ fun Dashboard(
                     onBackspaceClick = { transactionViewModel.onBackspaceClick() },
                     onAccountSelect = { transactionViewModel.selectAccount(it) },
                     onCategorySelect = { transactionViewModel.selectCategory(it) },
+                    onDateSelect = { transactionViewModel.setDate(it) },
                     onNoteChange = { transactionViewModel.setNote(it) },
                     onSubmit = {
                         transactionViewModel.submitTransaction(

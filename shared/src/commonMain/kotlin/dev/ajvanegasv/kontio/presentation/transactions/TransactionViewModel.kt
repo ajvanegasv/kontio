@@ -10,6 +10,8 @@ import dev.ajvanegasv.kontio.domain.model.TransactionType
 import dev.ajvanegasv.kontio.domain.repository.AccountRepository
 import dev.ajvanegasv.kontio.domain.repository.CategoryRepository
 import dev.ajvanegasv.kontio.domain.usecase.CreateTransactionUseCase
+import dev.ajvanegasv.kontio.presentation.util.DateFormatter
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +25,7 @@ data class TransactionCreationUiState(
     val selectedAccountId: String? = null,
     val selectedCategoryId: String? = null,
     val note: String = "",
+    val timestamp: Long = kotlin.time.Clock.System.now().toEpochMilliseconds(),
     val accounts: List<Account> = emptyList(),
     val categories: List<Category> = emptyList(),
     val isSubmitting: Boolean = false,
@@ -31,20 +34,27 @@ data class TransactionCreationUiState(
 ) {
     val numericAmount: Double
         get() = amountString.toDoubleOrNull() ?: 0.0
+
+    val formattedDate: String
+        get() = DateFormatter.formatDisplayDate(timestamp)
 }
 
 class TransactionViewModel(
     accountRepository: AccountRepository = AppContainer.accountRepository,
     categoryRepository: CategoryRepository = AppContainer.categoryRepository,
-    private val createTransactionUseCase: CreateTransactionUseCase = AppContainer.createTransactionUseCase
+    private val createTransactionUseCase: CreateTransactionUseCase = AppContainer.createTransactionUseCase,
+    coroutineScope: CoroutineScope? = null
 ) : ViewModel() {
+
+    private val scope = coroutineScope ?: viewModelScope
 
     private data class FormFields(
         val type: TransactionType = TransactionType.EXPENSE,
         val amountString: String = "0",
         val selectedAccountId: String? = null,
         val selectedCategoryId: String? = null,
-        val note: String = ""
+        val note: String = "",
+        val timestamp: Long = kotlin.time.Clock.System.now().toEpochMilliseconds()
     )
 
     private val _form = MutableStateFlow(FormFields())
@@ -69,6 +79,7 @@ class TransactionViewModel(
             selectedAccountId = resolvedAccountId,
             selectedCategoryId = resolvedCategoryId,
             note = form.note,
+            timestamp = form.timestamp,
             accounts = accounts,
             categories = filteredCategories,
             isSubmitting = submitting,
@@ -76,10 +87,27 @@ class TransactionViewModel(
             isSuccess = _isSuccess.value
         )
     }.stateIn(
-        scope = viewModelScope,
+        scope = scope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = TransactionCreationUiState()
     )
+
+    fun prepareTransaction(type: TransactionType = TransactionType.EXPENSE, accountId: String? = null) {
+        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        _form.value = FormFields(
+            type = type,
+            amountString = "0",
+            selectedAccountId = accountId ?: _form.value.selectedAccountId,
+            selectedCategoryId = null,
+            note = "",
+            timestamp = now
+        )
+        _errorMessage.value = null
+    }
+
+    fun setDate(timestamp: Long) {
+        _form.value = _form.value.copy(timestamp = timestamp)
+    }
 
     fun setTransactionType(type: TransactionType) {
         _form.value = _form.value.copy(type = type, selectedCategoryId = null)
@@ -144,11 +172,12 @@ class TransactionViewModel(
             return
         }
 
-        viewModelScope.launch {
+        scope.launch {
             _isSubmitting.value = true
             _errorMessage.value = null
 
             val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val txTimestamp = if (state.timestamp > 0L) state.timestamp else now
             val newTx = Transaction(
                 id = "tx_${now}_${(100..999).random()}",
                 accountId = accountId,
@@ -156,7 +185,7 @@ class TransactionViewModel(
                 type = state.type,
                 amount = amount,
                 currency = state.accounts.firstOrNull { it.id == accountId }?.currency ?: "USD",
-                timestamp = now,
+                timestamp = txTimestamp,
                 note = state.note.trim()
             )
 

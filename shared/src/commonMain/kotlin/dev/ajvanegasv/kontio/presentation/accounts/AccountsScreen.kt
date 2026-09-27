@@ -37,26 +37,40 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.ajvanegasv.kontio.domain.model.Account
 import dev.ajvanegasv.kontio.domain.model.AccountType
+import dev.ajvanegasv.kontio.domain.model.TransactionType
+import dev.ajvanegasv.kontio.presentation.accounts.components.RealisticBankCard
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardIcons
-import dev.ajvanegasv.kontio.presentation.designsystem.glass.GlassTokens
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 import dev.ajvanegasv.kontio.presentation.util.CurrencyFormatter
 
 @Composable
 fun AccountsScreen(
     viewModel: AccountsViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onAddTransactionForAccount: (accountId: String, type: TransactionType) -> Unit = { _, _ -> }
 ) {
     val state by viewModel.uiState.collectAsState()
-    val isDark = isSystemInDarkTheme()
     var accountPendingDelete by remember { mutableStateOf<Account?>(null) }
+
+    // Si hay una cuenta seleccionada para ver su detalle, mostrar AccountDetailScreen
+    val selectedAcc = state.selectedAccount
+    if (state.selectedAccountId != null && selectedAcc != null) {
+        AccountDetailScreen(
+            account = selectedAcc,
+            transactions = state.selectedAccountTransactions,
+            onBackClick = { viewModel.selectAccountForDetail(null) },
+            onAddTransactionClick = onAddTransactionForAccount,
+            onDeleteAccount = { viewModel.deleteAccount(it.id) },
+            onDeleteTransaction = { viewModel.deleteTransaction(it.id) },
+            modifier = modifier
+        )
+        return
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
@@ -154,14 +168,21 @@ fun AccountsScreen(
                 }
             }
 
-            // 3. Carrusel horizontal de tarjetas bancarias estilo Glassmorphism
+            // 3. Carrusel horizontal de tarjetas bancarias hiper-realistas
             item {
-                Text(
-                    text = "Tarjetas y Cuentas Activas",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Column {
+                    Text(
+                        text = "Tarjetas y Cuentas Activas",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Toca una tarjeta para ver sus movimientos y detalles",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             item {
@@ -170,7 +191,10 @@ fun AccountsScreen(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(state.accounts) { account ->
-                        BankCardGlassItem(account = account)
+                        RealisticBankCard(
+                            account = account,
+                            onClick = { viewModel.selectAccountForDetail(account.id) }
+                        )
                     }
                 }
             }
@@ -188,6 +212,7 @@ fun AccountsScreen(
             items(state.accounts) { account ->
                 AccountRowItem(
                     account = account,
+                    onClick = { viewModel.selectAccountForDetail(account.id) },
                     onDelete = { accountPendingDelete = account }
                 )
             }
@@ -206,7 +231,7 @@ fun AccountsScreen(
                 },
                 text = {
                     Text(
-                        text = "¿Estás seguro de que deseas eliminar la cuenta \"${accToDelete.name}\"? Se eliminarán también todas las transacciones asociadas a esta cuenta.",
+                        text = "Se eliminará '${accToDelete.name}' de forma permanente.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
@@ -237,113 +262,39 @@ fun AccountsScreen(
     }
 }
 
+/**
+ * Delegado de compatibilidad para BankCardGlassItem hacia RealisticBankCard.
+ */
 @Composable
 fun BankCardGlassItem(
     account: Account,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
-    val cardColor = try {
-        Color(
-            red = account.colorHex.substring(1, 3).toInt(16) / 255f,
-            green = account.colorHex.substring(3, 5).toInt(16) / 255f,
-            blue = account.colorHex.substring(5, 7).toInt(16) / 255f
-        )
-    } catch (e: Exception) {
-        MaterialTheme.colorScheme.primary
-    }
-
-    KontioGlassCard(
-        modifier = modifier
-            .width(280.dp)
-            .height(170.dp),
-        shape = RoundedCornerShape(22.dp),
-        elevation = GlassTokens.HeroCardElevation,
-        contentPadding = PaddingValues(20.dp)
-    ) {
-        // Fondo con gradiente sutil del color de la tarjeta
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            cardColor.copy(alpha = 0.25f),
-                            cardColor.copy(alpha = 0.05f)
-                        )
-                    )
-                )
-        )
-
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = account.name,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Text(
-                    text = when (account.type) {
-                        AccountType.CREDIT_CARD -> "CRÉDITO"
-                        AccountType.SAVINGS -> "AHORROS"
-                        AccountType.CHECKING -> "CORRIENTE"
-                        AccountType.CASH -> "EFECTIVO"
-                        AccountType.DIGITAL_WALLET -> "BILLETERA"
-                    },
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            // Chip simulado
-            Box(
-                modifier = Modifier
-                    .size(width = 34.dp, height = 24.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0xFFD4AF37).copy(alpha = 0.8f))
-            )
-
-            Column {
-                Text(
-                    text = if (account.type == AccountType.CREDIT_CARD) "Saldo adeudado" else "Saldo disponible",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = CurrencyFormatter.format(account.balance, account.currency),
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                if (account.availableCredit != null) {
-                    Text(
-                        text = "Cupo libre: ${CurrencyFormatter.format(account.availableCredit!!, account.currency)}",
-                        fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                }
-            }
-        }
-    }
+    RealisticBankCard(
+        account = account,
+        modifier = modifier,
+        onClick = onClick
+    )
 }
 
 @Composable
 fun AccountRowItem(
     account: Account,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null
 ) {
+    val clickModifier = if (onClick != null) {
+        Modifier.clickable { onClick() }
+    } else {
+        Modifier
+    }
+
     KontioGlassCard(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(clickModifier),
         shape = RoundedCornerShape(16.dp),
         contentPadding = PaddingValues(16.dp)
     ) {
@@ -385,7 +336,13 @@ fun AccountRowItem(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = account.type.name.replace("_", " "),
+                        text = when (account.type) {
+                            AccountType.CREDIT_CARD -> "Tarjeta de Crédito"
+                            AccountType.SAVINGS -> "Cuenta de Ahorros"
+                            AccountType.CHECKING -> "Cuenta Corriente"
+                            AccountType.CASH -> "Efectivo"
+                            AccountType.DIGITAL_WALLET -> "Billetera Digital"
+                        },
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
