@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.ajvanegasv.kontio.domain.model.Account
 import dev.ajvanegasv.kontio.domain.model.AccountType
-import dev.ajvanegasv.kontio.presentation.accounts.components.AddAccountBottomSheet
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardIcons
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.GlassTokens
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
@@ -55,7 +54,7 @@ fun AccountsScreen(
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = 90.dp, bottom = 110.dp, start = 20.dp, end = 20.dp),
+            contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp, start = 20.dp, end = 20.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             // 1. Encabezado y botón agregar
@@ -181,31 +180,6 @@ fun AccountsScreen(
 
             items(state.accounts) { account ->
                 AccountRowItem(account = account)
-            }
-        }
-
-        // Modal para agregar cuenta si está abierto
-        if (state.isAddAccountOpen) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable { viewModel.closeAddAccount() },
-                contentAlignment = Alignment.BottomCenter
-            ) {
-                AddAccountBottomSheet(
-                    onDismiss = { viewModel.closeAddAccount() },
-                    onSaveAccount = { name, type, balance, creditLimit, colorHex ->
-                        viewModel.createAccount(
-                            name = name,
-                            type = type,
-                            initialBalance = balance,
-                            creditLimit = creditLimit,
-                            colorHex = colorHex
-                        )
-                    },
-                    errorMessage = state.errorMessage
-                )
             }
         }
     }

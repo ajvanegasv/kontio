@@ -42,7 +42,7 @@ fun ProfileScreen(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(top = 90.dp, bottom = 110.dp, start = 20.dp, end = 20.dp),
+        contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp, start = 20.dp, end = 20.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         // Tarjeta de Perfil
