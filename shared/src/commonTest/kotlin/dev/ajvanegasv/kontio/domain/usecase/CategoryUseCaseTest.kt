@@ -254,4 +254,62 @@ class CategoryUseCaseTest {
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is IllegalArgumentException)
     }
+
+    @Test
+    fun testDeleteDefaultCategorySuccessWhenNoTransactions(): Unit = runBlocking {
+        val categoryRepo = FakeCategoryRepository()
+        val txRepo = FakeCategoryTestTransactionRepository()
+        val deleteUseCase = DeleteCategoryUseCase(categoryRepo, txRepo)
+
+        // Poblamos las categorías por defecto
+        categoryRepo.seedDefaultCategoriesIfEmpty()
+        val initialCount = categoryRepo.getCategoriesCount()
+        assertEquals(13, initialCount)
+
+        // Verificamos que cat_food es por defecto
+        val foodBefore = categoryRepo.getCategoryById("cat_food").first()
+        assertNotNull(foodBefore)
+        assertTrue(foodBefore.isDefault)
+
+        // Eliminamos la categoría por defecto
+        val result = deleteUseCase("cat_food")
+        assertTrue(result.isSuccess)
+
+        // Verificamos que se eliminó correctamente y las demás se mantienen
+        assertEquals(initialCount - 1, categoryRepo.getCategoriesCount())
+        assertNull(categoryRepo.getCategoryById("cat_food").first())
+        assertNotNull(categoryRepo.getCategoryById("cat_transport").first())
+    }
+
+    @Test
+    fun testDeleteDefaultCategoryFailsWhenTransactionsExist(): Unit = runBlocking {
+        val categoryRepo = FakeCategoryRepository()
+        val txRepo = FakeCategoryTestTransactionRepository()
+        val deleteUseCase = DeleteCategoryUseCase(categoryRepo, txRepo)
+
+        // Poblamos las categorías por defecto
+        categoryRepo.seedDefaultCategoriesIfEmpty()
+
+        // Asociamos una transacción a cat_salary
+        txRepo.insertTransaction(
+            Transaction(
+                id = "tx_salary_1",
+                accountId = "acc_cash",
+                categoryId = "cat_salary",
+                type = TransactionType.INCOME,
+                amount = 2500.0,
+                timestamp = 2000L
+            )
+        )
+
+        // Intentar eliminar la categoría debe fallar
+        val result = deleteUseCase("cat_salary")
+        assertTrue(result.isFailure)
+        val ex = result.exceptionOrNull()
+        assertTrue(ex is IllegalStateException)
+        assertEquals("No se puede eliminar la categoría porque tiene transacciones asociadas", ex.message)
+
+        // La categoría por defecto debe permanecer
+        assertNotNull(categoryRepo.getCategoryById("cat_salary").first())
+    }
 }

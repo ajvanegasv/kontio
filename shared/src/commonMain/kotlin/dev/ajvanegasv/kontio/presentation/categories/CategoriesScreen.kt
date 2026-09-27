@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -252,7 +253,7 @@ fun CategoriesScreen(
                 },
                 text = {
                     Text(
-                        text = "¿Estás seguro de que deseas eliminar la categoría \"${catToDelete.name}\"? Solo se pueden eliminar categorías personalizadas que no tengan transacciones asociadas.",
+                        text = "¿Estás seguro de que deseas eliminar la categoría \"${catToDelete.name}\"? Solo se pueden eliminar categorías que no tengan transacciones asociadas.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
@@ -380,12 +381,14 @@ private fun CategoryItemRow(
 
                 Spacer(modifier = Modifier.width(14.dp))
 
-                Column {
+                Column(modifier = Modifier.weight(1f, fill = false)) {
                     Text(
                         text = category.name,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
@@ -436,19 +439,19 @@ private fun CategoryItemRow(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                } else {
-                    // Botón para eliminar
-                    IconButton(
-                        onClick = onDeleteClick,
-                        modifier = Modifier.size(34.dp)
-                    ) {
-                        Icon(
-                            imageVector = DashboardIcons.Delete,
-                            contentDescription = "Eliminar categoría",
-                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.75f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                }
+
+                // Botón para eliminar (disponible para todas las categorías)
+                IconButton(
+                    onClick = onDeleteClick,
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Icon(
+                        imageVector = DashboardIcons.Delete,
+                        contentDescription = "Eliminar categoría",
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.75f),
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
         }

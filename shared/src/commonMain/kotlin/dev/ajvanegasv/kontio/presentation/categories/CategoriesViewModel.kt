@@ -8,6 +8,7 @@ import dev.ajvanegasv.kontio.domain.model.TransactionType
 import dev.ajvanegasv.kontio.domain.repository.CategoryRepository
 import dev.ajvanegasv.kontio.domain.usecase.CreateCategoryUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteCategoryUseCase
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,8 +35,11 @@ data class CategoriesUiState(
 class CategoriesViewModel(
     private val categoryRepository: CategoryRepository = AppContainer.categoryRepository,
     private val createCategoryUseCase: CreateCategoryUseCase = AppContainer.createCategoryUseCase,
-    private val deleteCategoryUseCase: DeleteCategoryUseCase = AppContainer.deleteCategoryUseCase
+    private val deleteCategoryUseCase: DeleteCategoryUseCase = AppContainer.deleteCategoryUseCase,
+    coroutineScope: CoroutineScope? = null
 ) : ViewModel() {
+
+    private val scope = coroutineScope ?: viewModelScope
 
     private val _filter = MutableStateFlow(CategoryFilter.ALL)
     private val _isAddCategoryOpen = MutableStateFlow(false)
@@ -64,7 +68,7 @@ class CategoriesViewModel(
             errorMessage = error
         )
     }.stateIn(
-        scope = viewModelScope,
+        scope = scope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = CategoriesUiState(isLoading = true)
     )
@@ -94,7 +98,7 @@ class CategoriesViewModel(
 
     fun confirmDeleteCategory() {
         val category = _categoryPendingDelete.value ?: return
-        viewModelScope.launch {
+        scope.launch {
             val result = deleteCategoryUseCase(category.id)
             if (result.isSuccess) {
                 _categoryPendingDelete.value = null
@@ -113,7 +117,7 @@ class CategoriesViewModel(
         type: TransactionType,
         onSuccess: () -> Unit = {}
     ) {
-        viewModelScope.launch {
+        scope.launch {
             val result = createCategoryUseCase(name, iconName, colorHex, type)
             if (result.isSuccess) {
                 _isAddCategoryOpen.value = false
