@@ -118,4 +118,8 @@ class TransactionRepositoryImpl(
     override suspend fun getTransactionsCount(): Int {
         return transactionDao.getTransactionsCount()
     }
+
+    override suspend fun getTransactionsCountByCategory(categoryId: String): Int {
+        return transactionDao.getTransactionsCountByCategoryId(categoryId)
+    }
 }

@@ -14,8 +14,10 @@ import dev.ajvanegasv.kontio.domain.repository.BackupRepository
 import dev.ajvanegasv.kontio.domain.repository.CategoryRepository
 import dev.ajvanegasv.kontio.domain.repository.TransactionRepository
 import dev.ajvanegasv.kontio.domain.usecase.CreateAccountUseCase
+import dev.ajvanegasv.kontio.domain.usecase.CreateCategoryUseCase
 import dev.ajvanegasv.kontio.domain.usecase.CreateTransactionUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteAccountUseCase
+import dev.ajvanegasv.kontio.domain.usecase.DeleteCategoryUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteTransactionUseCase
 import dev.ajvanegasv.kontio.domain.usecase.GetDashboardSummaryUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -76,6 +78,19 @@ object AppContainer {
     val deleteAccountUseCase: DeleteAccountUseCase by lazy {
         DeleteAccountUseCase(
             accountRepository = accountRepository,
+            transactionRepository = transactionRepository
+        )
+    }
+
+    val createCategoryUseCase: CreateCategoryUseCase by lazy {
+        CreateCategoryUseCase(
+            categoryRepository = categoryRepository
+        )
+    }
+
+    val deleteCategoryUseCase: DeleteCategoryUseCase by lazy {
+        DeleteCategoryUseCase(
+            categoryRepository = categoryRepository,
             transactionRepository = transactionRepository
         )
     }

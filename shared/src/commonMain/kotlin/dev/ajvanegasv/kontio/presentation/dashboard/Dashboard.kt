@@ -47,6 +47,8 @@ import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassBottomSh
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.LocalHazeState
 import dev.ajvanegasv.kontio.presentation.designsystem.theme.LocalKontioMeshColors
 import dev.ajvanegasv.kontio.domain.model.TransactionType
+import dev.ajvanegasv.kontio.presentation.categories.CategoriesScreen
+import dev.ajvanegasv.kontio.presentation.more.MoreScreen
 import dev.ajvanegasv.kontio.presentation.profile.ProfileScreen
 import dev.ajvanegasv.kontio.presentation.transactions.TransactionFilter
 import dev.ajvanegasv.kontio.presentation.transactions.TransactionsScreen
@@ -78,6 +80,7 @@ fun Dashboard(
     var isAddTransactionOpen by remember { mutableStateOf(false) }
     var transactionPendingDelete by remember { mutableStateOf<DashboardTransaction?>(null) }
     var isShowingTransactions by remember { mutableStateOf(false) }
+    var isShowingCategories by remember { mutableStateOf(false) }
     var transactionsInitialFilter by remember { mutableStateOf(TransactionFilter.ALL) }
 
     val dashboardState by dashboardViewModel.uiState.collectAsState()
@@ -107,6 +110,7 @@ fun Dashboard(
                                 isAddTransactionOpen = true
                             } else {
                                 isShowingTransactions = false
+                                isShowingCategories = false
                                 selectedTab = tab
                             }
                         }
@@ -204,11 +208,19 @@ fun Dashboard(
                             )
                         }
 
-                        DashboardTab.PROFILE -> {
-                            ProfileScreen(
-                                backupViewModel = backupViewModel,
-                                modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
-                            )
+                        DashboardTab.MORE -> {
+                            if (isShowingCategories) {
+                                CategoriesScreen(
+                                    onBackClick = { isShowingCategories = false },
+                                    modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
+                                )
+                            } else {
+                                MoreScreen(
+                                    onNavigateToCategories = { isShowingCategories = true },
+                                    backupViewModel = backupViewModel,
+                                    modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
+                                )
+                            }
                         }
 
                         DashboardTab.STATS -> {

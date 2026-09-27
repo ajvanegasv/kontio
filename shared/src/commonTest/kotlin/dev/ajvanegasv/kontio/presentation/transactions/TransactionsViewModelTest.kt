@@ -77,6 +77,9 @@ private class FakeTestTransactionRepository : TransactionRepository {
     }
 
     override suspend fun getTransactionsCount(): Int = transactions.value.size
+
+    override suspend fun getTransactionsCountByCategory(categoryId: String): Int =
+        transactions.value.count { it.categoryId == categoryId }
 }
 
 class TransactionsViewModelTest {

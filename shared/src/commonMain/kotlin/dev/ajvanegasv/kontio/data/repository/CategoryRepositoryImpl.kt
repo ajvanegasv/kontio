@@ -28,6 +28,10 @@ class CategoryRepositoryImpl(
         categoryDao.insertCategory(CategoryEntity.fromDomain(category))
     }
 
+    override suspend fun deleteCategory(id: String) {
+        categoryDao.deleteCategoryById(id)
+    }
+
     override suspend fun seedDefaultCategoriesIfEmpty() {
         val count = categoryDao.getCategoriesCount()
         if (count == 0) {

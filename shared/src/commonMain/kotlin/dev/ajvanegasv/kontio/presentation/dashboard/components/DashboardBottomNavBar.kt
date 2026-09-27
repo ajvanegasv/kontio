@@ -42,7 +42,7 @@ enum class DashboardTab {
     STATS,
     ADD,
     CARDS,
-    PROFILE
+    MORE
 }
 
 /**
@@ -140,12 +140,12 @@ fun DashboardBottomNavBar(
                 onClick = { onTabSelected(DashboardTab.CARDS) }
             )
 
-            // Profile
+            // Más
             DashboardNavItem(
-                icon = DashboardIcons.Person,
-                label = "Profile",
-                isSelected = selectedTab == DashboardTab.PROFILE,
-                onClick = { onTabSelected(DashboardTab.PROFILE) }
+                icon = DashboardIcons.Settings,
+                label = "Más",
+                isSelected = selectedTab == DashboardTab.MORE,
+                onClick = { onTabSelected(DashboardTab.MORE) }
             )
         }
     }

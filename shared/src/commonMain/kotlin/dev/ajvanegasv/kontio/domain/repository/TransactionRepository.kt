@@ -13,4 +13,5 @@ interface TransactionRepository {
     suspend fun getTransactionById(id: String): Transaction?
     suspend fun deleteTransactionsByAccountId(accountId: String)
     suspend fun getTransactionsCount(): Int
+    suspend fun getTransactionsCountByCategory(categoryId: String): Int
 }

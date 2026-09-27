@@ -8,6 +8,7 @@ interface CategoryRepository {
     fun getCategories(type: TransactionType? = null): Flow<List<Category>>
     fun getCategoryById(id: String): Flow<Category?>
     suspend fun insertCategory(category: Category)
+    suspend fun deleteCategory(id: String)
     suspend fun seedDefaultCategoriesIfEmpty()
     suspend fun getCategoriesCount(): Int
 }
