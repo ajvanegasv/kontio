@@ -40,6 +40,13 @@ object DateFormatter {
         }
     }
 
+    fun formatShortDate(timestamp: Long): String {
+        val txDate = toLocalDate(timestamp)
+        val shortMonths = listOf("", "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
+        val m = shortMonths.getOrElse(txDate.monthNumber) { "" }
+        return "${txDate.dayOfMonth} $m"
+    }
+
 
     fun formatTime(timestamp: Long): String {
         val timeZone = TimeZone.currentSystemDefault()

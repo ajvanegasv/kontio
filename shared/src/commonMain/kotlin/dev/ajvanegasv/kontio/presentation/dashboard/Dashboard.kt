@@ -54,6 +54,8 @@ import dev.ajvanegasv.kontio.presentation.transactions.TransactionFilter
 import dev.ajvanegasv.kontio.presentation.transactions.TransactionsScreen
 import dev.ajvanegasv.kontio.presentation.transactions.TransactionViewModel
 import dev.ajvanegasv.kontio.presentation.transactions.components.AddTransactionBottomSheet
+import dev.ajvanegasv.kontio.presentation.statement.ImportStatementBottomSheet
+import dev.ajvanegasv.kontio.presentation.statement.ImportStatementViewModel
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 
@@ -71,6 +73,7 @@ fun Dashboard(
     accountsViewModel: AccountsViewModel = viewModel { AccountsViewModel() },
     transactionViewModel: TransactionViewModel = viewModel { TransactionViewModel() },
     backupViewModel: BackupViewModel = viewModel { BackupViewModel() },
+    importStatementViewModel: ImportStatementViewModel = viewModel { ImportStatementViewModel() },
     onNotificationClick: () -> Unit = {},
     onSeeAllTransactionsClick: () -> Unit = {},
     onTransactionClick: (DashboardTransaction) -> Unit = {}
@@ -78,6 +81,7 @@ fun Dashboard(
     val hazeState = remember { HazeState() }
     var selectedTab by remember { mutableStateOf(DashboardTab.HOME) }
     var isAddTransactionOpen by remember { mutableStateOf(false) }
+    var isImportStatementOpen by remember { mutableStateOf(false) }
     var transactionPendingDelete by remember { mutableStateOf<DashboardTransaction?>(null) }
     var isShowingTransactions by remember { mutableStateOf(false) }
     var isShowingCategories by remember { mutableStateOf(false) }
@@ -150,6 +154,7 @@ fun Dashboard(
                                             )
                                         )
                                     },
+                                    onImportStatementClick = { isImportStatementOpen = true },
                                     modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
                                 )
                             } else {
@@ -227,6 +232,7 @@ fun Dashboard(
                                 MoreScreen(
                                     onNavigateToCategories = { isShowingCategories = true },
                                     backupViewModel = backupViewModel,
+                                    onImportStatementClick = { isImportStatementOpen = true },
                                     modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
                                 )
                             }
@@ -305,6 +311,20 @@ fun Dashboard(
                         )
                     },
                     errorMessage = accountsState.errorMessage
+                )
+            }
+
+            // Modal inferior para Importar Extracto Bancario con IA
+            KontioGlassBottomSheetContainer(
+                visible = isImportStatementOpen,
+                onDismissRequest = { isImportStatementOpen = false }
+            ) {
+                ImportStatementBottomSheet(
+                    viewModel = importStatementViewModel,
+                    onDismiss = { isImportStatementOpen = false },
+                    onSuccess = {
+                        isImportStatementOpen = false
+                    }
                 )
             }
 

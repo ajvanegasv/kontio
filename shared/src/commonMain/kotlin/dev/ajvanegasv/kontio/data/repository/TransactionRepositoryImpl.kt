@@ -95,6 +95,10 @@ class TransactionRepositoryImpl(
         transactionDao.insertTransaction(TransactionEntity.fromDomain(transaction))
     }
 
+    override suspend fun insertTransactions(transactions: List<Transaction>) {
+        transactionDao.insertTransactions(transactions.map { TransactionEntity.fromDomain(it) })
+    }
+
     override suspend fun deleteTransaction(id: String) {
         transactionDao.deleteTransaction(id)
     }

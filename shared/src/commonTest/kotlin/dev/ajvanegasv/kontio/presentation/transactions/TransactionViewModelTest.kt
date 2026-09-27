@@ -85,6 +85,10 @@ private class FakeTestTxRepo : TransactionRepository {
         savedTransactions.add(transaction)
     }
 
+    override suspend fun insertTransactions(transactions: List<Transaction>) {
+        savedTransactions.addAll(transactions)
+    }
+
     override suspend fun deleteTransaction(id: String) {
         savedTransactions.removeAll { it.id == id }
     }

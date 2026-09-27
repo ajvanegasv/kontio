@@ -40,10 +40,13 @@ import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 fun MoreScreen(
     onNavigateToCategories: () -> Unit,
     backupViewModel: BackupViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onImportStatementClick: () -> Unit = {}
 ) {
     val backupState by backupViewModel.uiState.collectAsState()
     val categories by AppContainer.categoryRepository.getCategories().collectAsState(initial = emptyList())
+    val apiKey by AppContainer.aiConfigStorage.apiKeyFlow.collectAsState(initial = AppContainer.aiConfigStorage.getApiKey())
+    val isAiConfigured = !apiKey.isNullOrBlank()
     val isDark = isSystemInDarkTheme()
 
     LazyColumn(
@@ -179,6 +182,102 @@ fun MoreScreen(
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            Icon(
+                                imageVector = DashboardIcons.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2.5 Sección de Inteligencia Artificial & Extractos
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "INTELIGENCIA ARTIFICIAL & EXTRACTOS",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+
+                KontioGlassCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onImportStatementClick),
+                    shape = RoundedCornerShape(20.dp),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = DashboardIcons.AutoAwesome,
+                                    contentDescription = "Extractos IA",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(14.dp))
+
+                            Column {
+                                Text(
+                                    text = "Importar Extracto Bancario",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Lee extractos en PDF o CSV y organízalos automáticamente con IA",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    lineHeight = 16.sp
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (isAiConfigured) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f)
+                                        else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f)
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = if (isAiConfigured) "Gemini IA" else "Configurar",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isAiConfigured) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
                                 )
                             }
 

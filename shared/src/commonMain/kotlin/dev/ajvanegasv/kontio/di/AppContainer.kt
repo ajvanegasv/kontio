@@ -102,6 +102,35 @@ object AppContainer {
         )
     }
 
+    val aiConfigStorage: dev.ajvanegasv.kontio.data.local.AiConfigStorage by lazy {
+        dev.ajvanegasv.kontio.data.local.getAiConfigStorage()
+    }
+
+    val geminiApiClient: dev.ajvanegasv.kontio.data.remote.gemini.GeminiApiClient by lazy {
+        dev.ajvanegasv.kontio.data.remote.gemini.GeminiApiClient()
+    }
+
+    val geminiStatementParser: dev.ajvanegasv.kontio.data.remote.gemini.GeminiStatementParser by lazy {
+        dev.ajvanegasv.kontio.data.remote.gemini.GeminiStatementParser(geminiApiClient)
+    }
+
+    val analyzeBankStatementUseCase: dev.ajvanegasv.kontio.domain.usecase.AnalyzeBankStatementUseCase by lazy {
+        dev.ajvanegasv.kontio.domain.usecase.AnalyzeBankStatementUseCase(
+            geminiStatementParser = geminiStatementParser,
+            categoryRepository = categoryRepository,
+            accountRepository = accountRepository,
+            transactionRepository = transactionRepository,
+            aiConfigStorage = aiConfigStorage
+        )
+    }
+
+    val batchImportTransactionsUseCase: dev.ajvanegasv.kontio.domain.usecase.BatchImportTransactionsUseCase by lazy {
+        dev.ajvanegasv.kontio.domain.usecase.BatchImportTransactionsUseCase(
+            transactionRepository = transactionRepository,
+            accountRepository = accountRepository
+        )
+    }
+
     fun initializeApp(scope: CoroutineScope = CoroutineScope(Dispatchers.IO)) {
         scope.launch {
             categoryRepository.seedDefaultCategoriesIfEmpty()

@@ -63,6 +63,10 @@ private class FakeTestTransactionRepository : TransactionRepository {
         transactions.value = listOf(transaction) + transactions.value
     }
 
+    override suspend fun insertTransactions(transactions: List<Transaction>) {
+        this.transactions.value = transactions + this.transactions.value
+    }
+
     override suspend fun deleteTransaction(id: String) {
         transactions.value = transactions.value.filterNot { it.id == id }
     }

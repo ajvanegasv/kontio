@@ -9,6 +9,7 @@ interface TransactionRepository {
     fun getTransactionsByAccount(accountId: String): Flow<List<Transaction>>
     fun getTransactionsInDateRange(startDate: Long, endDate: Long): Flow<List<Transaction>>
     suspend fun insertTransaction(transaction: Transaction)
+    suspend fun insertTransactions(transactions: List<Transaction>)
     suspend fun deleteTransaction(id: String)
     suspend fun getTransactionById(id: String): Transaction?
     suspend fun deleteTransactionsByAccountId(accountId: String)

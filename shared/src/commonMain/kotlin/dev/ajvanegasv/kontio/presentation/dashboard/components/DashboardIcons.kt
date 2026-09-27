@@ -887,5 +887,99 @@ object DashboardIcons {
             close()
         }
     }
+
+    val Description: ImageVector by lazy {
+        buildIcon("Description") {
+            moveTo(14f, 2f)
+            horizontalLineTo(6f)
+            curveTo(4.9f, 2f, 4f, 2.9f, 4f, 4f)
+            verticalLineTo(20f)
+            curveTo(4f, 21.1f, 4.9f, 22f, 6f, 22f)
+            horizontalLineTo(18f)
+            curveTo(19.1f, 22f, 20f, 21.1f, 20f, 20f)
+            verticalLineTo(8f)
+            lineTo(14f, 2f)
+            close()
+            moveTo(16f, 18f)
+            horizontalLineTo(8f)
+            verticalLineTo(16f)
+            horizontalLineTo(16f)
+            verticalLineTo(18f)
+            close()
+            moveTo(16f, 14f)
+            horizontalLineTo(8f)
+            verticalLineTo(12f)
+            horizontalLineTo(16f)
+            verticalLineTo(14f)
+            close()
+            moveTo(13f, 9f)
+            verticalLineTo(3.5f)
+            lineTo(18.5f, 9f)
+            horizontalLineTo(13f)
+            close()
+        }
+    }
+
+    val AutoAwesome: ImageVector by lazy {
+        buildIcon("AutoAwesome") {
+            moveTo(19f, 9f)
+            lineTo(17.74f, 6.26f)
+            lineTo(15f, 5f)
+            lineTo(17.74f, 3.74f)
+            lineTo(19f, 1f)
+            lineTo(20.26f, 3.74f)
+            lineTo(23f, 5f)
+            lineTo(20.26f, 6.26f)
+            close()
+            moveTo(9f, 4f)
+            lineTo(6.5f, 9.5f)
+            lineTo(1f, 12f)
+            lineTo(6.5f, 14.5f)
+            lineTo(9f, 20f)
+            lineTo(11.5f, 14.5f)
+            lineTo(17f, 12f)
+            lineTo(11.5f, 9.5f)
+            close()
+            moveTo(19f, 15f)
+            lineTo(17.74f, 17.74f)
+            lineTo(15f, 19f)
+            lineTo(17.74f, 20.26f)
+            lineTo(19f, 23f)
+            lineTo(20.26f, 20.26f)
+            lineTo(23f, 19f)
+            lineTo(20.26f, 17.74f)
+            close()
+        }
+    }
+
+    val UploadFile: ImageVector by lazy {
+        buildIcon("UploadFile") {
+            moveTo(14f, 2f)
+            horizontalLineTo(6f)
+            curveTo(4.9f, 2f, 4f, 2.9f, 4f, 4f)
+            verticalLineTo(20f)
+            curveTo(4f, 21.1f, 4.9f, 22f, 6f, 22f)
+            horizontalLineTo(18f)
+            curveTo(19.1f, 22f, 20f, 21.1f, 20f, 20f)
+            verticalLineTo(8f)
+            lineTo(14f, 2f)
+            close()
+            moveTo(13f, 15f)
+            verticalLineTo(18f)
+            horizontalLineTo(11f)
+            verticalLineTo(15f)
+            horizontalLineTo(8f)
+            lineTo(12f, 11f)
+            lineTo(16f, 15f)
+            horizontalLineTo(13f)
+            close()
+            moveTo(13f, 9f)
+            verticalLineTo(3.5f)
+            lineTo(18.5f, 9f)
+            horizontalLineTo(13f)
+            close()
+        }
+    }
 }
+
 

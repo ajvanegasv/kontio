@@ -55,7 +55,8 @@ fun TransactionsScreen(
     modifier: Modifier = Modifier,
     initialFilter: TransactionFilter = TransactionFilter.ALL,
     viewModel: TransactionsViewModel = viewModel { TransactionsViewModel() },
-    onTransactionClick: (TransactionItemUiModel) -> Unit = {}
+    onTransactionClick: (TransactionItemUiModel) -> Unit = {},
+    onImportStatementClick: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     val isDark = isSystemInDarkTheme()
@@ -94,6 +95,17 @@ fun TransactionsScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onImportStatementClick) {
+                        Icon(
+                            imageVector = DashboardIcons.AutoAwesome,
+                            contentDescription = "Importar Extracto con IA",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
                     Button(
                         onClick = {
                             val defaultType = when (state.filter) {
