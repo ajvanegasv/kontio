@@ -46,7 +46,10 @@ import dev.ajvanegasv.kontio.presentation.dashboard.components.RecentTransaction
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassBottomSheetContainer
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.LocalHazeState
 import dev.ajvanegasv.kontio.presentation.designsystem.theme.LocalKontioMeshColors
+import dev.ajvanegasv.kontio.domain.model.TransactionType
 import dev.ajvanegasv.kontio.presentation.profile.ProfileScreen
+import dev.ajvanegasv.kontio.presentation.transactions.TransactionFilter
+import dev.ajvanegasv.kontio.presentation.transactions.TransactionsScreen
 import dev.ajvanegasv.kontio.presentation.transactions.TransactionViewModel
 import dev.ajvanegasv.kontio.presentation.transactions.components.AddTransactionBottomSheet
 import dev.chrisbanes.haze.HazeState
@@ -74,6 +77,8 @@ fun Dashboard(
     var selectedTab by remember { mutableStateOf(DashboardTab.HOME) }
     var isAddTransactionOpen by remember { mutableStateOf(false) }
     var transactionPendingDelete by remember { mutableStateOf<DashboardTransaction?>(null) }
+    var isShowingTransactions by remember { mutableStateOf(false) }
+    var transactionsInitialFilter by remember { mutableStateOf(TransactionFilter.ALL) }
 
     val dashboardState by dashboardViewModel.uiState.collectAsState()
     val accountsState by accountsViewModel.uiState.collectAsState()
@@ -96,11 +101,16 @@ fun Dashboard(
                 contentWindowInsets = WindowInsets.statusBars,
                 bottomBar = {
                     DashboardBottomNavBar(
-                        selectedTab = selectedTab,
+                        selectedTab = if (isShowingTransactions) DashboardTab.STATS else selectedTab,
                         onTabSelected = { tab ->
                             if (tab == DashboardTab.ADD) {
                                 isAddTransactionOpen = true
+                            } else if (tab == DashboardTab.STATS) {
+                                transactionsInitialFilter = TransactionFilter.ALL
+                                isShowingTransactions = true
+                                selectedTab = DashboardTab.STATS
                             } else {
+                                isShowingTransactions = false
                                 selectedTab = tab
                             }
                         }
@@ -115,42 +125,78 @@ fun Dashboard(
                     // Contenido según la pestaña activa
                     when (selectedTab) {
                         DashboardTab.HOME -> {
-                            LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .hazeSource(state = hazeState, zIndex = 0f),
-                                contentPadding = PaddingValues(
-                                    top = 16.dp,
-                                    bottom = 16.dp,
-                                    start = 20.dp,
-                                    end = 20.dp
-                                ),
-                                verticalArrangement = Arrangement.spacedBy(32.dp)
-                            ) {
-                                // 1. Tarjeta de balance principal consolidado en tiempo real
-                                item {
-                                    MainBalanceCard(
-                                        balance = dashboardState.balance,
-                                        onAddFundsClick = { isAddTransactionOpen = true }
-                                    )
-                                }
+                            if (isShowingTransactions) {
+                                TransactionsScreen(
+                                    onBackClick = { isShowingTransactions = false },
+                                    initialFilter = transactionsInitialFilter,
+                                    onAddTransactionClick = { type ->
+                                        transactionViewModel.setTransactionType(type)
+                                        isAddTransactionOpen = true
+                                    },
+                                    onTransactionClick = { txUiModel ->
+                                        onTransactionClick(
+                                            DashboardTransaction(
+                                                id = txUiModel.id,
+                                                title = txUiModel.title,
+                                                category = txUiModel.categoryName,
+                                                amount = txUiModel.amountFormatted,
+                                                isIncome = txUiModel.isIncome,
+                                                icon = txUiModel.icon
+                                            )
+                                        )
+                                    },
+                                    modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
+                                )
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .hazeSource(state = hazeState, zIndex = 0f),
+                                    contentPadding = PaddingValues(
+                                        top = 16.dp,
+                                        bottom = 16.dp,
+                                        start = 20.dp,
+                                        end = 20.dp
+                                    ),
+                                    verticalArrangement = Arrangement.spacedBy(32.dp)
+                                ) {
+                                    // 1. Tarjeta de balance principal consolidado en tiempo real
+                                    item {
+                                        MainBalanceCard(
+                                            balance = dashboardState.balance,
+                                            onAddFundsClick = { isAddTransactionOpen = true }
+                                        )
+                                    }
 
-                                // 2. Sección de estadísticas rápidas (Ingresos y Gastos del mes)
-                                item {
-                                    QuickStatsSection(
-                                        incomeAmount = dashboardState.incomeAmount,
-                                        expensesAmount = dashboardState.expensesAmount
-                                    )
-                                }
+                                    // 2. Sección de estadísticas rápidas (Ingresos y Gastos del mes)
+                                    item {
+                                        QuickStatsSection(
+                                            incomeAmount = dashboardState.incomeAmount,
+                                            expensesAmount = dashboardState.expensesAmount,
+                                            onIncomeClick = {
+                                                transactionsInitialFilter = TransactionFilter.INCOME
+                                                isShowingTransactions = true
+                                            },
+                                            onExpensesClick = {
+                                                transactionsInitialFilter = TransactionFilter.EXPENSE
+                                                isShowingTransactions = true
+                                            }
+                                        )
+                                    }
 
-                                // 3. Sección de transacciones recientes desde Room DB
-                                item {
-                                    RecentTransactionsSection(
-                                        transactions = dashboardState.transactions,
-                                        onSeeAllClick = onSeeAllTransactionsClick,
-                                        onTransactionClick = onTransactionClick,
-                                        onDeleteTransaction = { tx -> transactionPendingDelete = tx }
-                                    )
+                                    // 3. Sección de transacciones recientes desde Room DB
+                                    item {
+                                        RecentTransactionsSection(
+                                            transactions = dashboardState.transactions,
+                                            onSeeAllClick = {
+                                                transactionsInitialFilter = TransactionFilter.ALL
+                                                isShowingTransactions = true
+                                                onSeeAllTransactionsClick()
+                                            },
+                                            onTransactionClick = onTransactionClick,
+                                            onDeleteTransaction = { tx -> transactionPendingDelete = tx }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -170,29 +216,30 @@ fun Dashboard(
                         }
 
                         DashboardTab.STATS -> {
-                            // Vista rápida de estadísticas financieras
-                            LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .hazeSource(state = hazeState, zIndex = 0f),
-                                contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp, start = 20.dp, end = 20.dp),
-                                verticalArrangement = Arrangement.spacedBy(20.dp)
-                            ) {
-                                item {
-                                    QuickStatsSection(
-                                        incomeAmount = dashboardState.incomeAmount,
-                                        expensesAmount = dashboardState.expensesAmount
+                            TransactionsScreen(
+                                onBackClick = {
+                                    selectedTab = DashboardTab.HOME
+                                    isShowingTransactions = false
+                                },
+                                initialFilter = transactionsInitialFilter,
+                                onAddTransactionClick = { type ->
+                                    transactionViewModel.setTransactionType(type)
+                                    isAddTransactionOpen = true
+                                },
+                                onTransactionClick = { txUiModel ->
+                                    onTransactionClick(
+                                        DashboardTransaction(
+                                            id = txUiModel.id,
+                                            title = txUiModel.title,
+                                            category = txUiModel.categoryName,
+                                            amount = txUiModel.amountFormatted,
+                                            isIncome = txUiModel.isIncome,
+                                            icon = txUiModel.icon
+                                        )
                                     )
-                                }
-                                item {
-                                    RecentTransactionsSection(
-                                        transactions = dashboardState.transactions,
-                                        onSeeAllClick = onSeeAllTransactionsClick,
-                                        onTransactionClick = onTransactionClick,
-                                        onDeleteTransaction = { tx -> transactionPendingDelete = tx }
-                                    )
-                                }
-                            }
+                                },
+                                modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
+                            )
                         }
 
                         DashboardTab.ADD -> {

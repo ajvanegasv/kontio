@@ -31,7 +31,9 @@ import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 fun QuickStatsSection(
     modifier: Modifier = Modifier,
     incomeAmount: String = "$4,200.00",
-    expensesAmount: String = "$1,840.50"
+    expensesAmount: String = "$1,840.50",
+    onIncomeClick: () -> Unit = {},
+    onExpensesClick: () -> Unit = {}
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -43,7 +45,8 @@ fun QuickStatsSection(
             title = "INCOME",
             amount = incomeAmount,
             icon = DashboardIcons.ArrowUpward,
-            accentColor = MaterialTheme.colorScheme.secondary
+            accentColor = MaterialTheme.colorScheme.secondary,
+            onClick = onIncomeClick
         )
 
         // Tarjeta Expenses
@@ -52,7 +55,8 @@ fun QuickStatsSection(
             title = "EXPENSES",
             amount = expensesAmount,
             icon = DashboardIcons.ArrowDownward,
-            accentColor = MaterialTheme.colorScheme.error
+            accentColor = MaterialTheme.colorScheme.error,
+            onClick = onExpensesClick
         )
     }
 }
@@ -63,12 +67,14 @@ fun QuickStatCard(
     title: String,
     amount: String,
     icon: ImageVector,
-    accentColor: Color
+    accentColor: Color,
+    onClick: (() -> Unit)? = null
 ) {
     KontioGlassCard(
         modifier = modifier,
         shape = RoundedCornerShape(20.dp),
-        contentPadding = PaddingValues(16.dp)
+        contentPadding = PaddingValues(16.dp),
+        onClick = onClick
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
