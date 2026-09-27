@@ -37,6 +37,7 @@ import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardTransact
 import dev.ajvanegasv.kontio.presentation.dashboard.components.MainBalanceCard
 import dev.ajvanegasv.kontio.presentation.dashboard.components.QuickStatsSection
 import dev.ajvanegasv.kontio.presentation.dashboard.components.RecentTransactionsSection
+import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassBottomSheetContainer
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.LocalHazeState
 import dev.ajvanegasv.kontio.presentation.designsystem.theme.LocalKontioMeshColors
 import dev.ajvanegasv.kontio.presentation.profile.ProfileScreen
@@ -192,56 +193,46 @@ fun Dashboard(
                 }
             }
 
-            // Modal inferior de Registro de Transacción
-            if (isAddTransactionOpen) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.5f))
-                        .clickable { isAddTransactionOpen = false },
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    AddTransactionBottomSheet(
-                        state = txCreationState,
-                        onTypeSelect = { transactionViewModel.setTransactionType(it) },
-                        onNumberPadClick = { transactionViewModel.onNumberPadClick(it) },
-                        onBackspaceClick = { transactionViewModel.onBackspaceClick() },
-                        onAccountSelect = { transactionViewModel.selectAccount(it) },
-                        onCategorySelect = { transactionViewModel.selectCategory(it) },
-                        onNoteChange = { transactionViewModel.setNote(it) },
-                        onSubmit = {
-                            transactionViewModel.submitTransaction(
-                                onSuccess = { isAddTransactionOpen = false }
-                            )
-                        },
-                        onDismiss = { isAddTransactionOpen = false }
-                    )
-                }
+            // Modal inferior de Registro de Transacción con animación fluida y fondo difuminado
+            KontioGlassBottomSheetContainer(
+                visible = isAddTransactionOpen,
+                onDismissRequest = { isAddTransactionOpen = false }
+            ) {
+                AddTransactionBottomSheet(
+                    state = txCreationState,
+                    onTypeSelect = { transactionViewModel.setTransactionType(it) },
+                    onNumberPadClick = { transactionViewModel.onNumberPadClick(it) },
+                    onBackspaceClick = { transactionViewModel.onBackspaceClick() },
+                    onAccountSelect = { transactionViewModel.selectAccount(it) },
+                    onCategorySelect = { transactionViewModel.selectCategory(it) },
+                    onNoteChange = { transactionViewModel.setNote(it) },
+                    onSubmit = {
+                        transactionViewModel.submitTransaction(
+                            onSuccess = { isAddTransactionOpen = false }
+                        )
+                    },
+                    onDismiss = { isAddTransactionOpen = false }
+                )
             }
 
-            // Modal inferior para Agregar Cuenta
-            if (accountsState.isAddAccountOpen) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.5f))
-                        .clickable { accountsViewModel.closeAddAccount() },
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    AddAccountBottomSheet(
-                        onDismiss = { accountsViewModel.closeAddAccount() },
-                        onSaveAccount = { name, type, balance, creditLimit, colorHex ->
-                            accountsViewModel.createAccount(
-                                name = name,
-                                type = type,
-                                initialBalance = balance,
-                                creditLimit = creditLimit,
-                                colorHex = colorHex
-                            )
-                        },
-                        errorMessage = accountsState.errorMessage
-                    )
-                }
+            // Modal inferior para Agregar Cuenta con animación fluida y fondo difuminado
+            KontioGlassBottomSheetContainer(
+                visible = accountsState.isAddAccountOpen,
+                onDismissRequest = { accountsViewModel.closeAddAccount() }
+            ) {
+                AddAccountBottomSheet(
+                    onDismiss = { accountsViewModel.closeAddAccount() },
+                    onSaveAccount = { name, type, balance, creditLimit, colorHex ->
+                        accountsViewModel.createAccount(
+                            name = name,
+                            type = type,
+                            initialBalance = balance,
+                            creditLimit = creditLimit,
+                            colorHex = colorHex
+                        )
+                    },
+                    errorMessage = accountsState.errorMessage
+                )
             }
         }
     }

@@ -23,6 +23,7 @@ object GlassTokens {
     val CardCornerRadius: Dp = 20.dp
     val DockCornerRadius: Dp = 32.dp
     val ChipCornerRadius: Dp = 12.dp
+    val ModalCornerRadius: Dp = 28.dp
 
     // Elevaciones
     val CardElevation: Dp = 6.dp
@@ -107,6 +108,44 @@ object GlassTokens {
             blurRadius = 16.dp,
             tints = listOf(HazeTint(color = surface.copy(alpha = alpha))),
             noiseFactor = NoiseFactor
+        )
+    }
+
+    /**
+     * Estilo esmerilado profundo para modales y bottom sheets desplegables.
+     * Mayor radio de desenfoque y opacidad superficial reforzada (88%-92%) para
+     * difuminar y disolver completamente los textos y cifras de la pantalla subyacente,
+     * garantizando alto contraste y evitando confusión visual al interactuar con el formulario.
+     */
+    @Composable
+    fun modalStyle(): HazeStyle {
+        val isDark = isSystemInDarkTheme()
+        val surface = MaterialTheme.colorScheme.surfaceContainerHigh
+        val alpha = if (isDark) 0.88f else 0.92f
+        return HazeStyle(
+            backgroundColor = Color.Transparent,
+            blurRadius = ModalBlurRadius,
+            tints = listOf(HazeTint(color = surface.copy(alpha = alpha))),
+            noiseFactor = NoiseFactor
+        )
+    }
+
+    /**
+     * Estilo esmerilado para el telón de fondo (scrim) detrás de los modales desplegables.
+     * Aplica desenfoque Gaussiano en tiempo real sobre toda la vista de fondo y la atenúa
+     * suavemente para que los textos no distraigan ni compitan con el modal.
+     */
+    @Composable
+    fun scrimBlurStyle(): HazeStyle {
+        val isDark = isSystemInDarkTheme()
+        val scrimAlpha = if (isDark) 0.60f else 0.40f
+        return HazeStyle(
+            backgroundColor = Color.Transparent,
+            blurRadius = 24.dp,
+            tints = listOf(
+                HazeTint(color = Color.Black.copy(alpha = scrimAlpha))
+            ),
+            noiseFactor = 0.04f
         )
     }
 

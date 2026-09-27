@@ -64,8 +64,12 @@ fun AddTransactionBottomSheet(
         modifier = modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars),
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        elevation = GlassTokens.DockElevation,
+        shape = RoundedCornerShape(
+            topStart = GlassTokens.ModalCornerRadius,
+            topEnd = GlassTokens.ModalCornerRadius
+        ),
+        style = { GlassTokens.modalStyle() },
+        elevation = GlassTokens.ModalElevation,
         contentPadding = PaddingValues(20.dp)
     ) {
         Column(
@@ -75,9 +79,11 @@ fun AddTransactionBottomSheet(
             // Tirador superior del modal
             Box(
                 modifier = Modifier
+                    .padding(vertical = 4.dp)
                     .size(width = 40.dp, height = 4.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                    .clickable { onDismiss() }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
