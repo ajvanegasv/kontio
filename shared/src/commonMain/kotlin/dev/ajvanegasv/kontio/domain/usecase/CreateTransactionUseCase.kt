@@ -47,10 +47,21 @@ class CreateTransactionUseCase(
                     val targetAccount = accountRepository.getAccountById(targetId).firstOrNull()
                         ?: throw IllegalArgumentException("La cuenta de destino no existe")
 
-                    // Origen debita
-                    accountRepository.updateBalance(sourceAccount.id, sourceAccount.balance - transaction.amount)
-                    // Destino acredita
-                    accountRepository.updateBalance(targetAccount.id, targetAccount.balance + transaction.amount)
+                    // Origen debita (en cuenta regular reduce saldo, en tarjeta de crédito incrementa deuda)
+                    val newSourceBalance = if (sourceAccount.type == AccountType.CREDIT_CARD) {
+                        sourceAccount.balance + transaction.amount
+                    } else {
+                        sourceAccount.balance - transaction.amount
+                    }
+                    accountRepository.updateBalance(sourceAccount.id, newSourceBalance)
+
+                    // Destino acredita (en cuenta regular incrementa saldo, en tarjeta de crédito reduce deuda)
+                    val newTargetBalance = if (targetAccount.type == AccountType.CREDIT_CARD) {
+                        (targetAccount.balance - transaction.amount).coerceAtLeast(0.0)
+                    } else {
+                        targetAccount.balance + transaction.amount
+                    }
+                    accountRepository.updateBalance(targetAccount.id, newTargetBalance)
                 }
             }
 

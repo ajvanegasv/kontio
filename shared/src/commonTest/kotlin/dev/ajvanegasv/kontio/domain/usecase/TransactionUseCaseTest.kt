@@ -419,6 +419,60 @@ class TransactionUseCaseTest {
     }
 
     @Test
+    fun testTransferFromSavingsToCreditCardReducesCreditCardDebtAndSavings() = runBlocking {
+        val accountRepo = FakeAccountRepository()
+        val txRepo = FakeTransactionRepository()
+        val createTxUseCase = CreateTransactionUseCase(txRepo, accountRepo)
+        val deleteTxUseCase = DeleteTransactionUseCase(txRepo, accountRepo)
+
+        accountRepo.insertAccount(
+            Account(
+                id = "acc_savings",
+                name = "Ahorros",
+                type = AccountType.SAVINGS,
+                balance = 1000.0
+            )
+        )
+        accountRepo.insertAccount(
+            Account(
+                id = "acc_card",
+                name = "Tarjeta Visa",
+                type = AccountType.CREDIT_CARD,
+                balance = 400.0, // deuda actual
+                creditLimit = 1500.0
+            )
+        )
+
+        // Pagar 250 a la tarjeta desde ahorros vía transferencia
+        val tx = Transaction(
+            id = "tx_pay_card",
+            accountId = "acc_savings",
+            targetAccountId = "acc_card",
+            categoryId = "cat_transfer",
+            type = TransactionType.TRANSFER,
+            amount = 250.0,
+            timestamp = 1000L
+        )
+
+        val createResult = createTxUseCase(tx)
+        assertTrue(createResult.isSuccess)
+
+        // Ahorros debita 250 -> 750
+        assertEquals(750.0, accountRepo.getAccountById("acc_savings").firstOrNull()?.balance)
+        // Tarjeta reduce deuda en 250 -> 150
+        assertEquals(150.0, accountRepo.getAccountById("acc_card").firstOrNull()?.balance)
+
+        // Revertir transferencia
+        val deleteResult = deleteTxUseCase(tx.id)
+        assertTrue(deleteResult.isSuccess)
+
+        // Ahorros vuelve a 1000, Tarjeta vuelve a tener 400 de deuda
+        assertEquals(1000.0, accountRepo.getAccountById("acc_savings").firstOrNull()?.balance)
+        assertEquals(400.0, accountRepo.getAccountById("acc_card").firstOrNull()?.balance)
+    }
+
+
+    @Test
     fun testDeleteIncomeRevertsCreditCardDebt() = runBlocking {
         val accountRepo = FakeAccountRepository()
         val txRepo = FakeTransactionRepository()

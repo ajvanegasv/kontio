@@ -41,18 +41,28 @@ class DeleteTransactionUseCase(
                     TransactionType.TRANSFER -> {
                         val sourceAccount = accountRepository.getAccountById(transaction.accountId).firstOrNull()
                         if (sourceAccount != null) {
+                            val restoredSourceBalance = if (sourceAccount.type == AccountType.CREDIT_CARD) {
+                                (sourceAccount.balance - transaction.amount).coerceAtLeast(0.0)
+                            } else {
+                                sourceAccount.balance + transaction.amount
+                            }
                             accountRepository.updateBalance(
                                 sourceAccount.id,
-                                sourceAccount.balance + transaction.amount
+                                restoredSourceBalance
                             )
                         }
                         val targetId = transaction.targetAccountId
                         if (targetId != null) {
                             val targetAccount = accountRepository.getAccountById(targetId).firstOrNull()
                             if (targetAccount != null) {
+                                val restoredTargetBalance = if (targetAccount.type == AccountType.CREDIT_CARD) {
+                                    targetAccount.balance + transaction.amount
+                                } else {
+                                    targetAccount.balance - transaction.amount
+                                }
                                 accountRepository.updateBalance(
                                     targetAccount.id,
-                                    targetAccount.balance - transaction.amount
+                                    restoredTargetBalance
                                 )
                             }
                         }

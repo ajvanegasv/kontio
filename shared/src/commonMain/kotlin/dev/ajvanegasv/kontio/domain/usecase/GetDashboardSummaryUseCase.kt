@@ -17,15 +17,15 @@ class GetDashboardSummaryUseCase(
             accountRepository.getAccounts(),
             transactionRepository.getRecentTransactions(limit = 10)
         ) { accounts, recentTransactions ->
-            // Calcular balance neto consolidado
-            // Cuentas de débito/ahorros/efectivo suman; tarjetas de crédito representan deuda (restan del patrimonio neto)
-            var netBalance = 0.0
+            // Calcular balance disponible consolidado (dinero propio)
+            // Se suman cuentas de ahorros, corriente, efectivo y billeteras digitales.
+            // Las tarjetas de crédito representan una línea de crédito/deuda (no dinero disponible propio)
+            // y no se descuentan aquí para no duplicar el egreso cuando el usuario pague la tarjeta desde sus cuentas reales.
+            var totalBalance = 0.0
             for (acc in accounts) {
                 if (acc.isArchived) continue
-                if (acc.type == AccountType.CREDIT_CARD) {
-                    netBalance -= acc.balance
-                } else {
-                    netBalance += acc.balance
+                if (acc.type != AccountType.CREDIT_CARD) {
+                    totalBalance += acc.balance
                 }
             }
 
@@ -44,7 +44,7 @@ class GetDashboardSummaryUseCase(
             val defaultCurrency = accounts.firstOrNull()?.currency ?: "USD"
 
             DashboardSummary(
-                totalBalance = netBalance,
+                totalBalance = totalBalance,
                 monthlyIncome = incomeTotal,
                 monthlyExpenses = expensesTotal,
                 accounts = accounts,
