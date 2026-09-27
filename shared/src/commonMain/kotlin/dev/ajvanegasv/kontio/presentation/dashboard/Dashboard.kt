@@ -101,14 +101,10 @@ fun Dashboard(
                 contentWindowInsets = WindowInsets.statusBars,
                 bottomBar = {
                     DashboardBottomNavBar(
-                        selectedTab = if (isShowingTransactions) DashboardTab.STATS else selectedTab,
+                        selectedTab = selectedTab,
                         onTabSelected = { tab ->
                             if (tab == DashboardTab.ADD) {
                                 isAddTransactionOpen = true
-                            } else if (tab == DashboardTab.STATS) {
-                                transactionsInitialFilter = TransactionFilter.ALL
-                                isShowingTransactions = true
-                                selectedTab = DashboardTab.STATS
                             } else {
                                 isShowingTransactions = false
                                 selectedTab = tab
@@ -216,30 +212,29 @@ fun Dashboard(
                         }
 
                         DashboardTab.STATS -> {
-                            TransactionsScreen(
-                                onBackClick = {
-                                    selectedTab = DashboardTab.HOME
-                                    isShowingTransactions = false
-                                },
-                                initialFilter = transactionsInitialFilter,
-                                onAddTransactionClick = { type ->
-                                    transactionViewModel.setTransactionType(type)
-                                    isAddTransactionOpen = true
-                                },
-                                onTransactionClick = { txUiModel ->
-                                    onTransactionClick(
-                                        DashboardTransaction(
-                                            id = txUiModel.id,
-                                            title = txUiModel.title,
-                                            category = txUiModel.categoryName,
-                                            amount = txUiModel.amountFormatted,
-                                            isIncome = txUiModel.isIncome,
-                                            icon = txUiModel.icon
-                                        )
+                            // Vista independiente de Estadísticas Financieras
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .hazeSource(state = hazeState, zIndex = 0f),
+                                contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp, start = 20.dp, end = 20.dp),
+                                verticalArrangement = Arrangement.spacedBy(20.dp)
+                            ) {
+                                item {
+                                    QuickStatsSection(
+                                        incomeAmount = dashboardState.incomeAmount,
+                                        expensesAmount = dashboardState.expensesAmount
                                     )
-                                },
-                                modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
-                            )
+                                }
+                                item {
+                                    RecentTransactionsSection(
+                                        transactions = dashboardState.transactions,
+                                        onSeeAllClick = onSeeAllTransactionsClick,
+                                        onTransactionClick = onTransactionClick,
+                                        onDeleteTransaction = { tx -> transactionPendingDelete = tx }
+                                    )
+                                }
+                            }
                         }
 
                         DashboardTab.ADD -> {
