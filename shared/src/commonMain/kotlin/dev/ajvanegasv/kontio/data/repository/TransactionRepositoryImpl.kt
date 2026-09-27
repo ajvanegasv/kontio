@@ -99,6 +99,22 @@ class TransactionRepositoryImpl(
         transactionDao.deleteTransaction(id)
     }
 
+    override suspend fun getTransactionById(id: String): Transaction? {
+        val entity = transactionDao.getTransactionByIdDirect(id) ?: return null
+        val domain = entity.toDomain()
+        val category = categoryDao.getCategoryByIdDirect(domain.categoryId)?.toDomain()
+            ?: categoryDao.getAllCategoriesDirect().firstOrNull { it.id == domain.categoryId }?.toDomain()
+        val account = accountDao.getAccountByIdDirect(domain.accountId)?.toDomain()
+        return domain.copy(
+            category = category,
+            account = account
+        )
+    }
+
+    override suspend fun deleteTransactionsByAccountId(accountId: String) {
+        transactionDao.deleteTransactionsByAccountId(accountId)
+    }
+
     override suspend fun getTransactionsCount(): Int {
         return transactionDao.getTransactionsCount()
     }

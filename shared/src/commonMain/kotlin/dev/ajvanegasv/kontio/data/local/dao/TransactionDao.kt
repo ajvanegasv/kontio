@@ -36,6 +36,15 @@ interface TransactionDao {
     @Query("DELETE FROM transactions")
     suspend fun deleteAllTransactions()
 
+    @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
+    suspend fun getTransactionByIdDirect(id: String): TransactionEntity?
+
+    @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
+    fun getTransactionById(id: String): Flow<TransactionEntity?>
+
+    @Query("DELETE FROM transactions WHERE accountId = :accountId OR targetAccountId = :accountId")
+    suspend fun deleteTransactionsByAccountId(accountId: String)
+
     @Query("SELECT COUNT(*) FROM transactions")
     suspend fun getTransactionsCount(): Int
 }

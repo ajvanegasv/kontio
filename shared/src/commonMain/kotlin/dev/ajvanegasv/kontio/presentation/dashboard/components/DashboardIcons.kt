@@ -341,4 +341,27 @@ object DashboardIcons {
             close()
         }
     }
+
+    val Delete: ImageVector by lazy {
+        buildIcon("Delete") {
+            moveTo(6f, 19f)
+            curveTo(6f, 20.1f, 6.9f, 21f, 8f, 21f)
+            horizontalLineTo(16f)
+            curveTo(17.1f, 21f, 18f, 20.1f, 18f, 19f)
+            verticalLineTo(7f)
+            horizontalLineTo(6f)
+            verticalLineTo(19f)
+            close()
+            moveTo(19f, 4f)
+            horizontalLineTo(15.5f)
+            lineTo(14.5f, 3f)
+            horizontalLineTo(9.5f)
+            lineTo(8.5f, 4f)
+            horizontalLineTo(5f)
+            verticalLineTo(6f)
+            horizontalLineTo(19f)
+            verticalLineTo(4f)
+            close()
+        }
+    }
 }

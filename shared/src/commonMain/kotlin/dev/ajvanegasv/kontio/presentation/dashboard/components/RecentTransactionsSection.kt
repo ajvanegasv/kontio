@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
@@ -97,7 +98,8 @@ fun RecentTransactionsSection(
     modifier: Modifier = Modifier,
     transactions: List<DashboardTransaction> = defaultDashboardTransactions(),
     onSeeAllClick: () -> Unit = {},
-    onTransactionClick: (DashboardTransaction) -> Unit = {}
+    onTransactionClick: (DashboardTransaction) -> Unit = {},
+    onDeleteTransaction: ((DashboardTransaction) -> Unit)? = null
 ) {
     Column(
         modifier = modifier.fillMaxWidth()
@@ -141,7 +143,8 @@ fun RecentTransactionsSection(
             transactions.forEach { transaction ->
                 TransactionCardItem(
                     transaction = transaction,
-                    onClick = { onTransactionClick(transaction) }
+                    onClick = { onTransactionClick(transaction) },
+                    onDeleteTransaction = onDeleteTransaction
                 )
             }
         }
@@ -152,7 +155,8 @@ fun RecentTransactionsSection(
 fun TransactionCardItem(
     transaction: DashboardTransaction,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onDeleteTransaction: ((DashboardTransaction) -> Unit)? = null
 ) {
     val isDark = isSystemInDarkTheme()
     val isTertiary = transaction.category.equals("Entertainment", ignoreCase = true)
@@ -200,6 +204,7 @@ fun TransactionCardItem(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
+                modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Contenedor circular con borde y color temático adaptativo
@@ -237,13 +242,34 @@ fun TransactionCardItem(
                 }
             }
 
-            // Monto (Secondary para ingresos positivos, OnSurface para negativos)
-            Text(
-                text = transaction.amount,
-                color = if (transaction.isIncome) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
-            )
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Monto (Secondary para ingresos positivos, OnSurface para negativos)
+                Text(
+                    text = transaction.amount,
+                    color = if (transaction.isIncome) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+
+                if (onDeleteTransaction != null) {
+                    IconButton(
+                        onClick = { onDeleteTransaction(transaction) },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = DashboardIcons.Delete,
+                            contentDescription = "Eliminar transacción",
+                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }

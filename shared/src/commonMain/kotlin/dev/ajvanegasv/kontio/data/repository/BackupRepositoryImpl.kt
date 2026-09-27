@@ -10,7 +10,6 @@ import dev.ajvanegasv.kontio.domain.repository.BackupRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.datetime.Clock
 
 class BackupRepositoryImpl(
     private val accountDao: AccountDao,
@@ -38,7 +37,7 @@ class BackupRepositoryImpl(
             val categories = categoryDao.getAllCategoriesDirect()
             val transactions = transactionDao.getAllTransactionsDirect()
 
-            val now = Clock.System.now().toEpochMilliseconds()
+            val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             val dummyMetadata = BackupMetadata(
                 backupId = "backup_$now",
                 timestamp = now,
@@ -84,7 +83,7 @@ class BackupRepositoryImpl(
             val categories = categoryDao.getAllCategoriesDirect()
             val transactions = transactionDao.getAllTransactionsDirect()
 
-            val now = Clock.System.now().toEpochMilliseconds()
+            val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             val initialMetadata = BackupMetadata(
                 backupId = "drive_backup_$now",
                 timestamp = now,

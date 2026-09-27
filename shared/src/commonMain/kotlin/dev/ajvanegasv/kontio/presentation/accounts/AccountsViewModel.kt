@@ -7,13 +7,13 @@ import dev.ajvanegasv.kontio.domain.model.Account
 import dev.ajvanegasv.kontio.domain.model.AccountType
 import dev.ajvanegasv.kontio.domain.repository.AccountRepository
 import dev.ajvanegasv.kontio.domain.usecase.CreateAccountUseCase
+import dev.ajvanegasv.kontio.domain.usecase.DeleteAccountUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 
 data class AccountsUiState(
     val accounts: List<Account> = emptyList(),
@@ -26,7 +26,8 @@ data class AccountsUiState(
 
 class AccountsViewModel(
     private val accountRepository: AccountRepository = AppContainer.accountRepository,
-    private val createAccountUseCase: CreateAccountUseCase = AppContainer.createAccountUseCase
+    private val createAccountUseCase: CreateAccountUseCase = AppContainer.createAccountUseCase,
+    private val deleteAccountUseCase: DeleteAccountUseCase = AppContainer.deleteAccountUseCase
 ) : ViewModel() {
 
     private val _isAddAccountOpen = MutableStateFlow(false)
@@ -83,7 +84,7 @@ class AccountsViewModel(
         dueDay: Int? = null
     ) {
         viewModelScope.launch {
-            val now = Clock.System.now().toEpochMilliseconds()
+            val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             val newAccount = Account(
                 id = "acc_${now}_${(100..999).random()}",
                 name = name,
@@ -112,6 +113,16 @@ class AccountsViewModel(
             } else {
                 _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al crear la cuenta"
             }
+        }
+    }
+
+    fun deleteAccount(accountId: String, onComplete: (Result<Unit>) -> Unit = {}) {
+        viewModelScope.launch {
+            val result = deleteAccountUseCase(accountId)
+            if (result.isFailure) {
+                _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al eliminar la cuenta"
+            }
+            onComplete(result)
         }
     }
 }

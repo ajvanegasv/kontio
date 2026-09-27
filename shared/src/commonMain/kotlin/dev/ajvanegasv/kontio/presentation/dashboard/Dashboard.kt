@@ -11,8 +11,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -24,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -67,6 +73,7 @@ fun Dashboard(
     val hazeState = remember { HazeState() }
     var selectedTab by remember { mutableStateOf(DashboardTab.HOME) }
     var isAddTransactionOpen by remember { mutableStateOf(false) }
+    var transactionPendingDelete by remember { mutableStateOf<DashboardTransaction?>(null) }
 
     val dashboardState by dashboardViewModel.uiState.collectAsState()
     val accountsState by accountsViewModel.uiState.collectAsState()
@@ -141,7 +148,8 @@ fun Dashboard(
                                     RecentTransactionsSection(
                                         transactions = dashboardState.transactions,
                                         onSeeAllClick = onSeeAllTransactionsClick,
-                                        onTransactionClick = onTransactionClick
+                                        onTransactionClick = onTransactionClick,
+                                        onDeleteTransaction = { tx -> transactionPendingDelete = tx }
                                     )
                                 }
                             }
@@ -180,7 +188,8 @@ fun Dashboard(
                                     RecentTransactionsSection(
                                         transactions = dashboardState.transactions,
                                         onSeeAllClick = onSeeAllTransactionsClick,
-                                        onTransactionClick = onTransactionClick
+                                        onTransactionClick = onTransactionClick,
+                                        onDeleteTransaction = { tx -> transactionPendingDelete = tx }
                                     )
                                 }
                             }
@@ -232,6 +241,49 @@ fun Dashboard(
                         )
                     },
                     errorMessage = accountsState.errorMessage
+                )
+            }
+
+            // Diálogo de confirmación para eliminar transacción
+            val txToDelete = transactionPendingDelete
+            if (txToDelete != null) {
+                AlertDialog(
+                    onDismissRequest = { transactionPendingDelete = null },
+                    title = {
+                        Text(
+                            text = "¿Eliminar transacción?",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = "¿Estás seguro de que deseas eliminar la transacción \"${txToDelete.title}\" (${txToDelete.amount})? El saldo de la cuenta será recalculado automáticamente.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                dashboardViewModel.deleteTransaction(txToDelete.id)
+                                transactionPendingDelete = null
+                            },
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text("Eliminar", fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = { transactionPendingDelete = null }
+                        ) {
+                            Text("Cancelar")
+                        }
+                    },
+                    shape = RoundedCornerShape(20.dp),
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             }
         }

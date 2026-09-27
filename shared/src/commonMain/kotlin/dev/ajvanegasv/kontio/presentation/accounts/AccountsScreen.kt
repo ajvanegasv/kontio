@@ -20,14 +20,20 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +56,7 @@ fun AccountsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val isDark = isSystemInDarkTheme()
+    var accountPendingDelete by remember { mutableStateOf<Account?>(null) }
 
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
@@ -179,8 +186,53 @@ fun AccountsScreen(
             }
 
             items(state.accounts) { account ->
-                AccountRowItem(account = account)
+                AccountRowItem(
+                    account = account,
+                    onDelete = { accountPendingDelete = account }
+                )
             }
+        }
+
+        val accToDelete = accountPendingDelete
+        if (accToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { accountPendingDelete = null },
+                title = {
+                    Text(
+                        text = "¿Eliminar cuenta?",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                text = {
+                    Text(
+                        text = "¿Estás seguro de que deseas eliminar la cuenta \"${accToDelete.name}\"? Se eliminarán también todas las transacciones asociadas a esta cuenta.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.deleteAccount(accToDelete.id)
+                            accountPendingDelete = null
+                        },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("Eliminar", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { accountPendingDelete = null }
+                    ) {
+                        Text("Cancelar")
+                    }
+                },
+                shape = RoundedCornerShape(20.dp),
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         }
     }
 }
@@ -287,7 +339,8 @@ fun BankCardGlassItem(
 @Composable
 fun AccountRowItem(
     account: Account,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onDelete: (() -> Unit)? = null
 ) {
     KontioGlassCard(
         modifier = modifier.fillMaxWidth(),
@@ -299,7 +352,10 @@ fun AccountRowItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Box(
                     modifier = Modifier
                         .size(42.dp)
@@ -336,14 +392,35 @@ fun AccountRowItem(
                 }
             }
 
-            Text(
-                text = CurrencyFormatter.format(account.balance, account.currency),
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = if (account.type == AccountType.CREDIT_CARD && account.balance > 0)
-                    MaterialTheme.colorScheme.error
-                else MaterialTheme.colorScheme.onSurface
-            )
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = CurrencyFormatter.format(account.balance, account.currency),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (account.type == AccountType.CREDIT_CARD && account.balance > 0)
+                        MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurface
+                )
+
+                if (onDelete != null) {
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = DashboardIcons.Delete,
+                            contentDescription = "Eliminar cuenta",
+                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }

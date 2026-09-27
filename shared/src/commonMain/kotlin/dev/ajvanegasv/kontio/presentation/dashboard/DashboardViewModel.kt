@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dev.ajvanegasv.kontio.di.AppContainer
 import dev.ajvanegasv.kontio.domain.model.Account
 import dev.ajvanegasv.kontio.domain.model.TransactionType
+import dev.ajvanegasv.kontio.domain.usecase.DeleteTransactionUseCase
 import dev.ajvanegasv.kontio.domain.usecase.GetDashboardSummaryUseCase
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardTransaction
 import dev.ajvanegasv.kontio.presentation.util.CurrencyFormatter
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 data class DashboardUiState(
     val balance: String = "$0.00",
@@ -24,8 +26,16 @@ data class DashboardUiState(
 )
 
 class DashboardViewModel(
-    getDashboardSummaryUseCase: GetDashboardSummaryUseCase = AppContainer.getDashboardSummaryUseCase
+    getDashboardSummaryUseCase: GetDashboardSummaryUseCase = AppContainer.getDashboardSummaryUseCase,
+    private val deleteTransactionUseCase: DeleteTransactionUseCase = AppContainer.deleteTransactionUseCase
 ) : ViewModel() {
+
+    fun deleteTransaction(transactionId: String, onComplete: (Result<Unit>) -> Unit = {}) {
+        viewModelScope.launch {
+            val result = deleteTransactionUseCase(transactionId)
+            onComplete(result)
+        }
+    }
 
     val uiState: StateFlow<DashboardUiState> = getDashboardSummaryUseCase()
         .map { summary ->
