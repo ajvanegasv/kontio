@@ -92,9 +92,9 @@ fun DashboardTopAppBar(
                 .background(
                     Brush.linearGradient(
                         colors = listOf(
-                            Color(0xFF2E3E6B),
-                            Color(0xFF722744),
-                            Color(0xFF6366F1)
+                            Color(0xFF4D627F),
+                            Color(0xFF2D2A35),
+                            Color(0xFF4D342F)
                         )
                     )
                 )

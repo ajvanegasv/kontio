@@ -8,7 +8,10 @@ import androidx.compose.ui.graphics.Color
 import dev.ajvanegasv.kontio.presentation.dashboard.DashboardColors
 
 /**
- * Paleta de colores Dark fiel a la estética visual existente de Kontio.
+ * Paleta de colores Dark neutra, elegante y sofisticada construida en torno a la paleta:
+ * #191A1E (Fondo grafito oscuro), #2D2A35 (Superficies pizarra carbón),
+ * #4D627F (Acento pizarra azulado acero), #4D342F (Café moca cálido),
+ * #EFFFFA (Blanco hielo mentolado para tipografía y alto contraste).
  */
 val DarkColorScheme = darkColorScheme(
     primary = DashboardColors.Primary,
@@ -48,36 +51,44 @@ val DarkColorScheme = darkColorScheme(
 )
 
 /**
- * Paleta de colores Light refinada que preserva la estética glassmorphism con luminiscencia y alto contraste.
+ * Paleta de colores Light refinada y luminosa armonizada con la paleta neutra:
+ * Superficies limpias con tintes porcelana (#EFFFFA), acentos primarios pizarra acero (#4D627F),
+ * acentos terciarios moca cálido (#4D342F) y tipografía neutral profunda (#191A1E / #2D2A35).
  */
 val LightColorScheme = lightColorScheme(
-    background = Color(0xFFF4F6FB),
+    background = Color(0xFFF4F7F6),
     surface = Color(0xFFFFFFFF),
-    surfaceContainer = Color(0xFFF1F5F9),
-    surfaceContainerHigh = Color(0xFFE2E8F0),
-    surfaceContainerHighest = Color(0xFFCBD5E1),
-    onBackground = Color(0xFF0F172A),
-    onSurface = Color(0xFF0F172A),
-    onSurfaceVariant = Color(0xFF64748B),
-    primary = Color(0xFF4F46E5),
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFEFF4F2),
+    surfaceContainer = Color(0xFFE4EDE9),
+    surfaceContainerHigh = Color(0xFFDCE5E1),
+    surfaceContainerHighest = Color(0xFFD2DDD8),
+    surfaceDim = Color(0xFFE7ECEB),
+    surfaceBright = Color(0xFFFFFFFF),
+    onBackground = Color(0xFF191A1E),
+    onSurface = Color(0xFF191A1E),
+    onSurfaceVariant = Color(0xFF4E565E),
+    primary = Color(0xFF4D627F),
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFE0E7FF),
-    onPrimaryContainer = Color(0xFF1E1B4B),
-    inversePrimary = Color(0xFF818CF8),
-    secondary = Color(0xFF0D9488),
+    primaryContainer = Color(0xFFD6E3F2),
+    onPrimaryContainer = Color(0xFF101E2E),
+    inversePrimary = Color(0xFF9FB5D2),
+    secondary = Color(0xFF2E6B5C),
     onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFCCFBF1),
-    onSecondaryContainer = Color(0xFF115E59),
-    tertiary = Color(0xFF7C3AED),
+    secondaryContainer = Color(0xFFCEEDE3),
+    onSecondaryContainer = Color(0xFF0F3229),
+    tertiary = Color(0xFF4D342F),
     onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFFEDE9FE),
-    onTertiaryContainer = Color(0xFF4C1D95),
-    outline = Color(0xFF94A3B8),
-    outlineVariant = Color(0xFFCBD5E1),
-    error = Color(0xFFDC2626),
+    tertiaryContainer = Color(0xFFEEDCD7),
+    onTertiaryContainer = Color(0xFF2E1713),
+    outline = Color(0xFF869099),
+    outlineVariant = Color(0xFFCBD4D8),
+    inverseSurface = Color(0xFF191A1E),
+    inverseOnSurface = Color(0xFFEFFFFA),
+    error = Color(0xFFBA1A1A),
     onError = Color(0xFFFFFFFF),
-    errorContainer = Color(0xFFFEE2E2),
-    onErrorContainer = Color(0xFF991B1B)
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color(0xFF410002)
 )
 
 /**
@@ -93,19 +104,19 @@ data class KontioMeshColors(
 )
 
 val DarkMeshColors = KontioMeshColors(
-    background = Color(0xFF0B1326),
-    topStartOrb = Color(0xFF131118).copy(alpha = 0.90f),
-    topCenterOrb = Color(0xFF2E3E6B).copy(alpha = 0.55f),
-    topEndOrb = Color(0xFF722744).copy(alpha = 0.50f),
-    bottomStartOrb = Color(0xFF03C6B2).copy(alpha = 0.15f)
+    background = Color(0xFF191A1E),
+    topStartOrb = Color(0xFF2D2A35).copy(alpha = 0.85f),
+    topCenterOrb = Color(0xFF4D627F).copy(alpha = 0.35f),
+    topEndOrb = Color(0xFF4D342F).copy(alpha = 0.30f),
+    bottomStartOrb = Color(0xFF7EC8B5).copy(alpha = 0.12f)
 )
 
 val LightMeshColors = KontioMeshColors(
-    background = Color(0xFFF4F6FB),
-    topStartOrb = Color(0xFFC7D2FE).copy(alpha = 0.55f),
-    topCenterOrb = Color(0xFFBAE6FD).copy(alpha = 0.50f),
-    topEndOrb = Color(0xFFFBCFE8).copy(alpha = 0.45f),
-    bottomStartOrb = Color(0xFFA7F3D0).copy(alpha = 0.40f)
+    background = Color(0xFFF4F7F6),
+    topStartOrb = Color(0xFFD3E0EE).copy(alpha = 0.50f),
+    topCenterOrb = Color(0xFFE7DDD9).copy(alpha = 0.45f),
+    topEndOrb = Color(0xFFD4EDE5).copy(alpha = 0.50f),
+    bottomStartOrb = Color(0xFFDFEAE5).copy(alpha = 0.40f)
 )
 
 val LocalKontioMeshColors = staticCompositionLocalOf { DarkMeshColors }

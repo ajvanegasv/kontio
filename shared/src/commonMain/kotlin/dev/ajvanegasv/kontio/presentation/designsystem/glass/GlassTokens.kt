@@ -48,7 +48,7 @@ object GlassTokens {
         return if (isDark) {
             Color.Black.copy(alpha = 0.40f)
         } else {
-            Color(0xFF0F172A).copy(alpha = 0.06f)
+            Color(0xFF191A1E).copy(alpha = 0.05f)
         }
     }
 
@@ -58,7 +58,7 @@ object GlassTokens {
         return if (isDark) {
             Color.Black.copy(alpha = 0.60f)
         } else {
-            Color(0xFF0F172A).copy(alpha = 0.12f)
+            Color(0xFF191A1E).copy(alpha = 0.10f)
         }
     }
 
@@ -166,8 +166,8 @@ object GlassTokens {
             Brush.verticalGradient(
                 colors = listOf(
                     Color.White.copy(alpha = 0.95f),
-                    Color(0xFFE2E8F0).copy(alpha = 0.60f),
-                    Color(0xFF94A3B8).copy(alpha = 0.35f)
+                    Color(0xFFDCE5E1).copy(alpha = 0.60f),
+                    Color(0xFF869099).copy(alpha = 0.35f)
                 )
             )
         }
