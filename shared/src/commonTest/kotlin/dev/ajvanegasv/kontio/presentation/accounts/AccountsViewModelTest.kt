@@ -9,6 +9,7 @@ import dev.ajvanegasv.kontio.domain.repository.TransactionRepository
 import dev.ajvanegasv.kontio.domain.usecase.CreateAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteTransactionUseCase
+import dev.ajvanegasv.kontio.domain.usecase.ReassignTransactionsAccountUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -159,6 +160,7 @@ class AccountsViewModelTest {
             createAccountUseCase = createAccUseCase,
             deleteAccountUseCase = deleteAccUseCase,
             deleteTransactionUseCase = deleteTxUseCase,
+            reassignTransactionsAccountUseCase = ReassignTransactionsAccountUseCase(txRepo, accountRepo),
             coroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
         )
 
@@ -187,5 +189,86 @@ class AccountsViewModelTest {
         val closedState = viewModel.uiState.first { it.selectedAccountId == null }
         assertNull(closedState.selectedAccountId)
         assertTrue(closedState.selectedAccountTransactions.isEmpty())
+    }
+
+    @Test
+    fun testReassignAccountTransactionsUpdatesBothBalancesAndReassigns() = runBlocking {
+        val accountRepo = FakeAccountRepository()
+        val txRepo = FakeTransactionRepository()
+        val createAccUseCase = CreateAccountUseCase(accountRepo)
+        val deleteAccUseCase = DeleteAccountUseCase(accountRepo, txRepo)
+        val deleteTxUseCase = DeleteTransactionUseCase(txRepo, accountRepo)
+        val reassignUseCase = ReassignTransactionsAccountUseCase(txRepo, accountRepo)
+
+        val acc1 = Account(
+            id = "acc-wrong",
+            name = "Cuenta Errónea",
+            type = AccountType.SAVINGS,
+            balance = 800.0,
+            currency = "USD"
+        )
+        val acc2 = Account(
+            id = "acc-correct",
+            name = "Cuenta Correcta",
+            type = AccountType.SAVINGS,
+            balance = 500.0,
+            currency = "USD"
+        )
+        accountRepo.insertAccount(acc1)
+        accountRepo.insertAccount(acc2)
+
+        val tx1 = Transaction(
+            id = "tx-1",
+            accountId = "acc-wrong",
+            categoryId = "cat-food",
+            type = TransactionType.EXPENSE,
+            amount = 100.0,
+            timestamp = 1000L
+        )
+        val tx2 = Transaction(
+            id = "tx-2",
+            accountId = "acc-wrong",
+            categoryId = "cat-transport",
+            type = TransactionType.EXPENSE,
+            amount = 100.0,
+            timestamp = 2000L
+        )
+        txRepo.insertTransaction(tx1)
+        txRepo.insertTransaction(tx2)
+
+        val viewModel = AccountsViewModel(
+            accountRepository = accountRepo,
+            transactionRepository = txRepo,
+            createAccountUseCase = createAccUseCase,
+            deleteAccountUseCase = deleteAccUseCase,
+            deleteTransactionUseCase = deleteTxUseCase,
+            reassignTransactionsAccountUseCase = reassignUseCase,
+            coroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
+        )
+
+        var completedCount = 0
+        viewModel.reassignAccountTransactions(
+            fromAccountId = "acc-wrong",
+            toAccountId = "acc-correct",
+            onComplete = { result ->
+                completedCount = result.getOrDefault(0)
+            }
+        )
+
+        assertEquals(2, completedCount)
+
+        // Verificar que acc-wrong restauró su balance (800 + 200 = 1000)
+        val updatedAcc1 = accountRepo.getAccountById("acc-wrong").first()
+        assertEquals(1000.0, updatedAcc1?.balance)
+
+        // Verificar que acc-correct debitó (500 - 200 = 300)
+        val updatedAcc2 = accountRepo.getAccountById("acc-correct").first()
+        assertEquals(300.0, updatedAcc2?.balance)
+
+        // Verificar que las transacciones ahora pertenecen a acc-correct
+        val updatedTx1 = txRepo.getTransactionById("tx-1")
+        val updatedTx2 = txRepo.getTransactionById("tx-2")
+        assertEquals("acc-correct", updatedTx1?.accountId)
+        assertEquals("acc-correct", updatedTx2?.accountId)
     }
 }

@@ -57,11 +57,14 @@ class FakeTransactionRepository : TransactionRepository {
         transactions.map { list -> list.filter { it.timestamp in startDate..endDate } }
 
     override suspend fun insertTransaction(transaction: Transaction) {
-        transactions.value = listOf(transaction) + transactions.value
+        val updated = transactions.value.filterNot { it.id == transaction.id }
+        transactions.value = listOf(transaction) + updated
     }
 
     override suspend fun insertTransactions(transactions: List<Transaction>) {
-        this.transactions.value = transactions + this.transactions.value
+        val newIds = transactions.map { it.id }.toSet()
+        val remaining = this.transactions.value.filterNot { it.id in newIds }
+        this.transactions.value = transactions + remaining
     }
 
     override suspend fun deleteTransaction(id: String) {
@@ -537,5 +540,209 @@ class TransactionUseCaseTest {
         val deleteResult = deleteTxUseCase("tx_orphaned")
         assertTrue(deleteResult.isSuccess)
         assertNull(txRepo.getTransactionById("tx_orphaned"))
+    }
+
+    @Test
+    fun testUpdateTransactionAmountAdjustsBalanceProperly() = runBlocking {
+        val accountRepo = FakeAccountRepository()
+        val txRepo = FakeTransactionRepository()
+        val createTxUseCase = CreateTransactionUseCase(txRepo, accountRepo)
+        val updateTxUseCase = UpdateTransactionUseCase(txRepo, accountRepo)
+
+        accountRepo.insertAccount(
+            Account(
+                id = "acc_savings",
+                name = "Ahorros",
+                type = AccountType.SAVINGS,
+                balance = 500.0
+            )
+        )
+
+        val tx = Transaction(
+            id = "tx_edit_1",
+            accountId = "acc_savings",
+            categoryId = "cat_food",
+            type = TransactionType.EXPENSE,
+            amount = 100.0,
+            timestamp = 1000L
+        )
+
+        createTxUseCase(tx)
+        // Saldo después de crear gasto de 100: 500 - 100 = 400
+        assertEquals(400.0, accountRepo.getAccountById("acc_savings").firstOrNull()?.balance)
+
+        // Editamos el gasto para que sea de 150
+        val updatedTx = tx.copy(amount = 150.0, note = "Actualizado")
+        val updateResult = updateTxUseCase(updatedTx)
+        assertTrue(updateResult.isSuccess)
+
+        // Saldo debe ser 500 - 150 = 350
+        assertEquals(350.0, accountRepo.getAccountById("acc_savings").firstOrNull()?.balance)
+        val saved = txRepo.getTransactionById("tx_edit_1")
+        assertEquals(150.0, saved?.amount)
+        assertEquals("Actualizado", saved?.note)
+    }
+
+    @Test
+    fun testUpdateTransactionChangeAccountReconcilesBothAccounts() = runBlocking {
+        val accountRepo = FakeAccountRepository()
+        val txRepo = FakeTransactionRepository()
+        val createTxUseCase = CreateTransactionUseCase(txRepo, accountRepo)
+        val updateTxUseCase = UpdateTransactionUseCase(txRepo, accountRepo)
+
+        accountRepo.insertAccount(
+            Account(
+                id = "acc_wrong",
+                name = "Cuenta Errónea",
+                type = AccountType.SAVINGS,
+                balance = 1000.0
+            )
+        )
+        accountRepo.insertAccount(
+            Account(
+                id = "acc_correct",
+                name = "Cuenta Correcta",
+                type = AccountType.SAVINGS,
+                balance = 500.0
+            )
+        )
+
+        val tx = Transaction(
+            id = "tx_move_1",
+            accountId = "acc_wrong",
+            categoryId = "cat_food",
+            type = TransactionType.EXPENSE,
+            amount = 200.0,
+            timestamp = 1000L
+        )
+
+        createTxUseCase(tx)
+        // acc_wrong debita 200 -> 800
+        assertEquals(800.0, accountRepo.getAccountById("acc_wrong").firstOrNull()?.balance)
+        assertEquals(500.0, accountRepo.getAccountById("acc_correct").firstOrNull()?.balance)
+
+        // Editamos la transacción para moverla a acc_correct
+        val reassignedTx = tx.copy(accountId = "acc_correct")
+        val result = updateTxUseCase(reassignedTx)
+        assertTrue(result.isSuccess)
+
+        // acc_wrong debe restaurar sus 200 -> 1000
+        assertEquals(1000.0, accountRepo.getAccountById("acc_wrong").firstOrNull()?.balance)
+        // acc_correct debe debitar 200 -> 300
+        assertEquals(300.0, accountRepo.getAccountById("acc_correct").firstOrNull()?.balance)
+
+        val saved = txRepo.getTransactionById("tx_move_1")
+        assertEquals("acc_correct", saved?.accountId)
+    }
+
+    @Test
+    fun testUpdateTransactionFromCreditCardToSavingsReconcilesBalances() = runBlocking {
+        val accountRepo = FakeAccountRepository()
+        val txRepo = FakeTransactionRepository()
+        val createTxUseCase = CreateTransactionUseCase(txRepo, accountRepo)
+        val updateTxUseCase = UpdateTransactionUseCase(txRepo, accountRepo)
+
+        accountRepo.insertAccount(
+            Account(
+                id = "acc_card",
+                name = "Tarjeta",
+                type = AccountType.CREDIT_CARD,
+                balance = 200.0 // deuda inicial
+            )
+        )
+        accountRepo.insertAccount(
+            Account(
+                id = "acc_savings",
+                name = "Ahorros",
+                type = AccountType.SAVINGS,
+                balance = 1000.0
+            )
+        )
+
+        val tx = Transaction(
+            id = "tx_card_to_sav",
+            accountId = "acc_card",
+            categoryId = "cat_shopping",
+            type = TransactionType.EXPENSE,
+            amount = 150.0,
+            timestamp = 1000L
+        )
+
+        createTxUseCase(tx)
+        // Deuda en tarjeta aumenta a 350
+        assertEquals(350.0, accountRepo.getAccountById("acc_card").firstOrNull()?.balance)
+        assertEquals(1000.0, accountRepo.getAccountById("acc_savings").firstOrNull()?.balance)
+
+        // Reasignamos la transacción a Ahorros
+        val reassigned = tx.copy(accountId = "acc_savings")
+        val updateResult = updateTxUseCase(reassigned)
+        assertTrue(updateResult.isSuccess)
+
+        // Deuda en tarjeta vuelve a 200
+        assertEquals(200.0, accountRepo.getAccountById("acc_card").firstOrNull()?.balance)
+        // Saldo de ahorros debita 150 -> 850
+        assertEquals(850.0, accountRepo.getAccountById("acc_savings").firstOrNull()?.balance)
+    }
+
+    @Test
+    fun testReassignTransactionsAccountBulkMovesAllTransactionsAndReconciles() = runBlocking {
+        val accountRepo = FakeAccountRepository()
+        val txRepo = FakeTransactionRepository()
+        val createTxUseCase = CreateTransactionUseCase(txRepo, accountRepo)
+        val reassignUseCase = ReassignTransactionsAccountUseCase(txRepo, accountRepo)
+
+        accountRepo.insertAccount(
+            Account(
+                id = "acc_imported_wrong",
+                name = "Cuenta Equivocada",
+                type = AccountType.SAVINGS,
+                balance = 1000.0
+            )
+        )
+        accountRepo.insertAccount(
+            Account(
+                id = "acc_target",
+                name = "Cuenta Destino",
+                type = AccountType.SAVINGS,
+                balance = 2000.0
+            )
+        )
+
+        // Creamos 5 transacciones importadas en la cuenta errónea
+        for (i in 1..5) {
+            createTxUseCase(
+                Transaction(
+                    id = "tx_bulk_$i",
+                    accountId = "acc_imported_wrong",
+                    categoryId = "cat_food",
+                    type = TransactionType.EXPENSE,
+                    amount = 50.0,
+                    timestamp = 1000L + i
+                )
+            )
+        }
+
+        // Saldo de cuenta equivocada: 1000 - 250 = 750
+        assertEquals(750.0, accountRepo.getAccountById("acc_imported_wrong").firstOrNull()?.balance)
+        assertEquals(2000.0, accountRepo.getAccountById("acc_target").firstOrNull()?.balance)
+
+        // Mover todas las transacciones de acc_imported_wrong a acc_target
+        val result = reassignUseCase(
+            fromAccountId = "acc_imported_wrong",
+            toAccountId = "acc_target"
+        )
+        assertTrue(result.isSuccess)
+        assertEquals(5, result.getOrNull())
+
+        // Cuenta equivocada restaura su saldo a 1000
+        assertEquals(1000.0, accountRepo.getAccountById("acc_imported_wrong").firstOrNull()?.balance)
+        // Cuenta destino debita los 250 -> 1750
+        assertEquals(1750.0, accountRepo.getAccountById("acc_target").firstOrNull()?.balance)
+
+        // Todas las transacciones ahora pertenecen a acc_target
+        val targetTxs = txRepo.getTransactionsByAccount("acc_target").firstOrNull() ?: emptyList()
+        assertEquals(5, targetTxs.size)
+        val wrongTxs = txRepo.getTransactionsByAccount("acc_imported_wrong").firstOrNull() ?: emptyList()
+        assertEquals(0, wrongTxs.size)
     }
 }

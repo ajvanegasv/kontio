@@ -98,7 +98,21 @@ fun AddTransactionBottomSheet(
                     .clickable { onDismiss() }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = if (state.isEditing) "Editar Transacción" else "Nuevo Movimiento",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = if (state.isEditing) "Modifica los datos o reasigna la cuenta bancaria" else "Registra un ingreso o gasto",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Selector Ingreso / Gasto
             Row(
@@ -486,7 +500,9 @@ fun AddTransactionBottomSheet(
                 )
             ) {
                 Text(
-                    text = if (state.isSubmitting) "Guardando..." else "Guardar Transacción",
+                    text = if (state.isSubmitting) "Guardando..."
+                           else if (state.isEditing) "Guardar Cambios"
+                           else "Guardar Transacción",
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp
                 )

@@ -980,6 +980,49 @@ object DashboardIcons {
             close()
         }
     }
+
+    val Edit: ImageVector by lazy {
+        buildIcon("Edit") {
+            moveTo(3f, 17.25f)
+            verticalLineTo(21f)
+            horizontalLineTo(6.75f)
+            lineTo(17.81f, 9.94f)
+            lineTo(14.06f, 6.19f)
+            lineTo(3f, 17.25f)
+            close()
+            moveTo(20.71f, 7.04f)
+            curveTo(21.1f, 6.65f, 21.1f, 6.02f, 20.71f, 5.63f)
+            lineTo(18.37f, 3.29f)
+            curveTo(17.98f, 2.9f, 17.35f, 2.9f, 16.96f, 3.29f)
+            lineTo(15.13f, 5.12f)
+            lineTo(18.88f, 8.87f)
+            lineTo(20.71f, 7.04f)
+            close()
+        }
+    }
+
+    val SwapHoriz: ImageVector by lazy {
+        buildIcon("SwapHoriz") {
+            moveTo(6.99f, 11f)
+            lineTo(3f, 15f)
+            lineTo(6.99f, 19f)
+            verticalLineTo(16f)
+            horizontalLineTo(14f)
+            verticalLineTo(14f)
+            horizontalLineTo(6.99f)
+            verticalLineTo(11f)
+            close()
+            moveTo(21f, 9f)
+            lineTo(17.01f, 5f)
+            verticalLineTo(8f)
+            horizontalLineTo(10f)
+            verticalLineTo(10f)
+            horizontalLineTo(17.01f)
+            verticalLineTo(13f)
+            lineTo(21f, 9f)
+            close()
+        }
+    }
 }
 
 

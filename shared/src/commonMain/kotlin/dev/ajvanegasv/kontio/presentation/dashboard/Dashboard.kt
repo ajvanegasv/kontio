@@ -131,6 +131,12 @@ fun Dashboard(
                         .fillMaxSize()
                         .padding(innerPadding)
                 ) {
+                    val handleDashboardTransactionClick: (DashboardTransaction) -> Unit = { tx ->
+                        transactionViewModel.prepareEditTransactionById(tx.id)
+                        isAddTransactionOpen = true
+                        onTransactionClick(tx)
+                    }
+
                     // Contenido según la pestaña activa
                     when (selectedTab) {
                         DashboardTab.HOME -> {
@@ -143,6 +149,8 @@ fun Dashboard(
                                         isAddTransactionOpen = true
                                     },
                                     onTransactionClick = { txUiModel ->
+                                        transactionViewModel.prepareEditTransaction(txUiModel.originalTransaction)
+                                        isAddTransactionOpen = true
                                         onTransactionClick(
                                             DashboardTransaction(
                                                 id = txUiModel.id,
@@ -203,7 +211,7 @@ fun Dashboard(
                                                 isShowingTransactions = true
                                                 onSeeAllTransactionsClick()
                                             },
-                                            onTransactionClick = onTransactionClick,
+                                            onTransactionClick = handleDashboardTransactionClick,
                                             onDeleteTransaction = { tx -> transactionPendingDelete = tx }
                                         )
                                     }
@@ -216,6 +224,10 @@ fun Dashboard(
                                 viewModel = accountsViewModel,
                                 onAddTransactionForAccount = { accountId, type ->
                                     transactionViewModel.prepareTransaction(type = type, accountId = accountId)
+                                    isAddTransactionOpen = true
+                                },
+                                onEditTransaction = { tx ->
+                                    transactionViewModel.prepareEditTransaction(tx)
                                     isAddTransactionOpen = true
                                 },
                                 modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
@@ -257,7 +269,7 @@ fun Dashboard(
                                     RecentTransactionsSection(
                                         transactions = dashboardState.transactions,
                                         onSeeAllClick = onSeeAllTransactionsClick,
-                                        onTransactionClick = onTransactionClick,
+                                        onTransactionClick = handleDashboardTransactionClick,
                                         onDeleteTransaction = { tx -> transactionPendingDelete = tx }
                                     )
                                 }

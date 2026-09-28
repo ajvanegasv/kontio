@@ -1,6 +1,7 @@
 package dev.ajvanegasv.kontio.presentation.accounts
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -67,9 +68,13 @@ fun AccountDetailScreen(
     onAddTransactionClick: (accountId: String, type: TransactionType) -> Unit,
     onDeleteAccount: (Account) -> Unit,
     onDeleteTransaction: (Transaction) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    allAccounts: List<Account> = emptyList(),
+    onEditTransaction: (Transaction) -> Unit = {},
+    onReassignTransactions: (toAccountId: String) -> Unit = {}
 ) {
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var showReassignDialog by remember { mutableStateOf(false) }
     var transactionPendingDelete by remember { mutableStateOf<Transaction?>(null) }
 
     val groupedTransactions = remember(transactions) {
@@ -113,6 +118,17 @@ fun AccountDetailScreen(
                     }
                 },
                 actions = {
+                    val otherAccounts = allAccounts.filter { it.id != account.id }
+                    if (transactions.isNotEmpty() && otherAccounts.isNotEmpty()) {
+                        IconButton(onClick = { showReassignDialog = true }) {
+                            Icon(
+                                imageVector = DashboardIcons.SwapHoriz,
+                                contentDescription = "Mover transacciones a otra cuenta",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
                     IconButton(onClick = { showDeleteAccountDialog = true }) {
                         Icon(
                             imageVector = DashboardIcons.Delete,
@@ -344,25 +360,51 @@ fun AccountDetailScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Movimientos en esta cuenta",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f))
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = "${transactions.size}",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "Movimientos en esta cuenta",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "${transactions.size}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        val otherAccounts = allAccounts.filter { it.id != account.id }
+                        if (transactions.isNotEmpty() && otherAccounts.isNotEmpty()) {
+                            TextButton(
+                                onClick = { showReassignDialog = true },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = DashboardIcons.SwapHoriz,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Mover a otra",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }
@@ -448,6 +490,8 @@ fun AccountDetailScreen(
                         items(txsInGroup, key = { it.id }) { tx ->
                             AccountTransactionItem(
                                 transaction = tx,
+                                onClick = { onEditTransaction(tx) },
+                                onEdit = { onEditTransaction(tx) },
                                 onDelete = { transactionPendingDelete = tx }
                             )
                         }
@@ -536,6 +580,120 @@ fun AccountDetailScreen(
                 containerColor = MaterialTheme.colorScheme.surface
             )
         }
+
+        // Diálogo para Reasignar Transacciones a otra cuenta
+        val eligibleAccounts = allAccounts.filter { it.id != account.id }
+        if (showReassignDialog && eligibleAccounts.isNotEmpty()) {
+            var selectedTargetAccountId by remember { mutableStateOf(eligibleAccounts.first().id) }
+
+            AlertDialog(
+                onDismissRequest = { showReassignDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = DashboardIcons.SwapHoriz,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Mover transacciones",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            text = "Transfiere todas las ${transactions.size} transacciones de '${account.name}' a otra cuenta. Los saldos de ambas cuentas se recalcularán de forma automática.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 18.sp
+                        )
+
+                        Text(
+                            text = "Selecciona la cuenta de destino:",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            eligibleAccounts.forEach { targetAcc ->
+                                val isSelected = targetAcc.id == selectedTargetAccountId
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(
+                                            if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                            else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.25f)
+                                        )
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                            shape = RoundedCornerShape(12.dp)
+                                        )
+                                        .clickable { selectedTargetAccountId = targetAcc.id }
+                                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = targetAcc.name,
+                                                fontSize = 14.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = CurrencyFormatter.format(targetAcc.balance, targetAcc.currency),
+                                                fontSize = 12.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        if (isSelected) {
+                                            Icon(
+                                                imageVector = DashboardIcons.Check,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showReassignDialog = false
+                            onReassignTransactions(selectedTargetAccountId)
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text("Mover ${transactions.size} movimientos", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showReassignDialog = false }) {
+                        Text("Cancelar")
+                    }
+                },
+                shape = RoundedCornerShape(20.dp),
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        }
     }
 }
 
@@ -545,6 +703,8 @@ fun AccountDetailScreen(
 @Composable
 private fun AccountTransactionItem(
     transaction: Transaction,
+    onClick: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -571,7 +731,8 @@ private fun AccountTransactionItem(
     KontioGlassCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        contentPadding = PaddingValues(14.dp)
+        contentPadding = PaddingValues(14.dp),
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -620,7 +781,7 @@ private fun AccountTransactionItem(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
                     text = "${if (isIncome) "+ " else "- "}${CurrencyFormatter.format(transaction.amount, transaction.currency)}",
@@ -628,6 +789,18 @@ private fun AccountTransactionItem(
                     fontWeight = FontWeight.Bold,
                     color = if (isIncome) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error
                 )
+
+                IconButton(
+                    onClick = onEdit,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = DashboardIcons.Edit,
+                        contentDescription = "Editar",
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
 
                 IconButton(
                     onClick = onDelete,

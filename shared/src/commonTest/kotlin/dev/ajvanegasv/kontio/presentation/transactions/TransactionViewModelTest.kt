@@ -9,6 +9,7 @@ import dev.ajvanegasv.kontio.domain.repository.AccountRepository
 import dev.ajvanegasv.kontio.domain.repository.CategoryRepository
 import dev.ajvanegasv.kontio.domain.repository.TransactionRepository
 import dev.ajvanegasv.kontio.domain.usecase.CreateTransactionUseCase
+import dev.ajvanegasv.kontio.domain.usecase.UpdateTransactionUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -82,11 +83,16 @@ private class FakeTestTxRepo : TransactionRepository {
         MutableStateFlow(savedTransactions.filter { it.timestamp in startDate..endDate })
 
     override suspend fun insertTransaction(transaction: Transaction) {
-        savedTransactions.add(transaction)
+        val existingIndex = savedTransactions.indexOfFirst { it.id == transaction.id }
+        if (existingIndex >= 0) {
+            savedTransactions[existingIndex] = transaction
+        } else {
+            savedTransactions.add(transaction)
+        }
     }
 
     override suspend fun insertTransactions(transactions: List<Transaction>) {
-        savedTransactions.addAll(transactions)
+        transactions.forEach { insertTransaction(it) }
     }
 
     override suspend fun deleteTransaction(id: String) {
@@ -145,10 +151,13 @@ class TransactionViewModelTest {
         )
         catRepo.insertCategory(category)
 
+        val updateTxUseCase = UpdateTransactionUseCase(txRepo, accountRepo)
         val viewModel = TransactionViewModel(
             accountRepository = accountRepo,
             categoryRepository = catRepo,
+            transactionRepository = txRepo,
             createTransactionUseCase = createTxUseCase,
+            updateTransactionUseCase = updateTxUseCase,
             coroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
         )
 
@@ -178,5 +187,90 @@ class TransactionViewModelTest {
         assertEquals("cat-food", saved.categoryId)
         assertEquals(45.0, saved.amount)
         assertEquals(customDate, saved.timestamp)
+    }
+
+    @Test
+    fun testPrepareEditTransactionAndSubmitUpdatesTransactionAndReconciles() = runBlocking {
+        val accountRepo = FakeTestAccountRepo()
+        val catRepo = FakeTestCategoryRepo()
+        val txRepo = FakeTestTxRepo()
+        val createTxUseCase = CreateTransactionUseCase(txRepo, accountRepo)
+        val updateTxUseCase = UpdateTransactionUseCase(txRepo, accountRepo)
+
+        val account1 = Account(
+            id = "acc-1",
+            name = "Cuenta 1",
+            type = AccountType.SAVINGS,
+            balance = 500.0
+        )
+        val account2 = Account(
+            id = "acc-2",
+            name = "Cuenta 2",
+            type = AccountType.SAVINGS,
+            balance = 300.0
+        )
+        accountRepo.insertAccount(account1)
+        accountRepo.insertAccount(account2)
+
+        val catFood = Category(
+            id = "cat-food",
+            name = "Comida",
+            iconName = "restaurant",
+            colorHex = "#EF4444",
+            type = TransactionType.EXPENSE
+        )
+        catRepo.insertCategory(catFood)
+
+        // Transacción inicial en acc-1 con monto 50
+        val initialTx = Transaction(
+            id = "tx-original",
+            accountId = "acc-1",
+            categoryId = "cat-food",
+            type = TransactionType.EXPENSE,
+            amount = 50.0,
+            timestamp = 1000L,
+            note = "Almuerzo"
+        )
+        createTxUseCase(initialTx)
+
+        val viewModel = TransactionViewModel(
+            accountRepository = accountRepo,
+            categoryRepository = catRepo,
+            transactionRepository = txRepo,
+            createTransactionUseCase = createTxUseCase,
+            updateTransactionUseCase = updateTxUseCase,
+            coroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
+        )
+
+        // Cargar transacción existente en modo edición
+        viewModel.prepareEditTransaction(initialTx)
+
+        val editState = viewModel.uiState.first { it.isEditing }
+        assertTrue(editState.isEditing)
+        assertEquals("tx-original", editState.editingTransactionId)
+        assertEquals("50", editState.amountString)
+        assertEquals("acc-1", editState.selectedAccountId)
+        assertEquals("cat-food", editState.selectedCategoryId)
+        assertEquals("Almuerzo", editState.note)
+
+        // Cambiar la cuenta de cargo a acc-2 y la nota
+        viewModel.selectAccount("acc-2")
+        viewModel.setNote("Almuerzo Reasignado")
+
+        var successCallbackCalled = false
+        viewModel.submitTransaction(onSuccess = { successCallbackCalled = true })
+
+        assertTrue(successCallbackCalled)
+
+        // Verificar que acc-1 restauró su saldo (500) y acc-2 debitó 50 (250)
+        val updatedAcc1 = accountRepo.getAccountById("acc-1").first()
+        val updatedAcc2 = accountRepo.getAccountById("acc-2").first()
+        assertEquals(500.0, updatedAcc1?.balance)
+        assertEquals(250.0, updatedAcc2?.balance)
+
+        // Verificar que la transacción en el repositorio tiene accountId = acc-2
+        val updatedTx = txRepo.getTransactionById("tx-original")
+        assertEquals("acc-2", updatedTx?.accountId)
+        assertEquals("Almuerzo Reasignado", updatedTx?.note)
     }
 }

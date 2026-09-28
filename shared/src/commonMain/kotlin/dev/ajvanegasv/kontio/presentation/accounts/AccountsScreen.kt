@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.ajvanegasv.kontio.domain.model.Account
 import dev.ajvanegasv.kontio.domain.model.AccountType
+import dev.ajvanegasv.kontio.domain.model.Transaction
 import dev.ajvanegasv.kontio.domain.model.TransactionType
 import dev.ajvanegasv.kontio.presentation.accounts.components.RealisticBankCard
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardIcons
@@ -52,7 +53,8 @@ import dev.ajvanegasv.kontio.presentation.util.CurrencyFormatter
 fun AccountsScreen(
     viewModel: AccountsViewModel,
     modifier: Modifier = Modifier,
-    onAddTransactionForAccount: (accountId: String, type: TransactionType) -> Unit = { _, _ -> }
+    onAddTransactionForAccount: (accountId: String, type: TransactionType) -> Unit = { _, _ -> },
+    onEditTransaction: (Transaction) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     var accountPendingDelete by remember { mutableStateOf<Account?>(null) }
@@ -63,8 +65,13 @@ fun AccountsScreen(
         AccountDetailScreen(
             account = selectedAcc,
             transactions = state.selectedAccountTransactions,
+            allAccounts = state.accounts,
             onBackClick = { viewModel.selectAccountForDetail(null) },
             onAddTransactionClick = onAddTransactionForAccount,
+            onEditTransaction = onEditTransaction,
+            onReassignTransactions = { toAccountId ->
+                viewModel.reassignAccountTransactions(selectedAcc.id, toAccountId)
+            },
             onDeleteAccount = { viewModel.deleteAccount(it.id) },
             onDeleteTransaction = { viewModel.deleteTransaction(it.id) },
             modifier = modifier

@@ -9,7 +9,9 @@ import dev.ajvanegasv.kontio.domain.model.Transaction
 import dev.ajvanegasv.kontio.domain.model.TransactionType
 import dev.ajvanegasv.kontio.domain.repository.AccountRepository
 import dev.ajvanegasv.kontio.domain.repository.CategoryRepository
+import dev.ajvanegasv.kontio.domain.repository.TransactionRepository
 import dev.ajvanegasv.kontio.domain.usecase.CreateTransactionUseCase
+import dev.ajvanegasv.kontio.domain.usecase.UpdateTransactionUseCase
 import dev.ajvanegasv.kontio.presentation.util.DateFormatter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +22,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class TransactionCreationUiState(
+    val isEditing: Boolean = false,
+    val editingTransactionId: String? = null,
     val type: TransactionType = TransactionType.EXPENSE,
     val amountString: String = "0",
     val selectedAccountId: String? = null,
@@ -42,13 +46,17 @@ data class TransactionCreationUiState(
 class TransactionViewModel(
     accountRepository: AccountRepository = AppContainer.accountRepository,
     categoryRepository: CategoryRepository = AppContainer.categoryRepository,
+    private val transactionRepository: TransactionRepository = AppContainer.transactionRepository,
     private val createTransactionUseCase: CreateTransactionUseCase = AppContainer.createTransactionUseCase,
+    private val updateTransactionUseCase: UpdateTransactionUseCase = AppContainer.updateTransactionUseCase,
     coroutineScope: CoroutineScope? = null
 ) : ViewModel() {
 
     private val scope = coroutineScope ?: viewModelScope
 
     private data class FormFields(
+        val isEditing: Boolean = false,
+        val editingTransactionId: String? = null,
         val type: TransactionType = TransactionType.EXPENSE,
         val amountString: String = "0",
         val selectedAccountId: String? = null,
@@ -74,6 +82,8 @@ class TransactionViewModel(
         val resolvedCategoryId = form.selectedCategoryId ?: filteredCategories.firstOrNull()?.id
 
         TransactionCreationUiState(
+            isEditing = form.isEditing,
+            editingTransactionId = form.editingTransactionId,
             type = form.type,
             amountString = form.amountString,
             selectedAccountId = resolvedAccountId,
@@ -95,6 +105,8 @@ class TransactionViewModel(
     fun prepareTransaction(type: TransactionType = TransactionType.EXPENSE, accountId: String? = null) {
         val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
         _form.value = FormFields(
+            isEditing = false,
+            editingTransactionId = null,
             type = type,
             amountString = "0",
             selectedAccountId = accountId ?: _form.value.selectedAccountId,
@@ -103,6 +115,34 @@ class TransactionViewModel(
             timestamp = now
         )
         _errorMessage.value = null
+    }
+
+    fun prepareEditTransaction(transaction: Transaction) {
+        val amountStr = if (transaction.amount % 1.0 == 0.0) {
+            transaction.amount.toLong().toString()
+        } else {
+            transaction.amount.toString()
+        }
+        _form.value = FormFields(
+            isEditing = true,
+            editingTransactionId = transaction.id,
+            type = transaction.type,
+            amountString = amountStr,
+            selectedAccountId = transaction.accountId,
+            selectedCategoryId = transaction.categoryId,
+            note = transaction.note,
+            timestamp = transaction.timestamp
+        )
+        _errorMessage.value = null
+    }
+
+    fun prepareEditTransactionById(transactionId: String) {
+        scope.launch {
+            val tx = transactionRepository.getTransactionById(transactionId)
+            if (tx != null) {
+                prepareEditTransaction(tx)
+            }
+        }
     }
 
     fun setDate(timestamp: Long) {
@@ -178,25 +218,41 @@ class TransactionViewModel(
 
             val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
             val txTimestamp = if (state.timestamp > 0L) state.timestamp else now
-            val newTx = Transaction(
-                id = "tx_${now}_${(100..999).random()}",
-                accountId = accountId,
-                categoryId = categoryId,
-                type = state.type,
-                amount = amount,
-                currency = state.accounts.firstOrNull { it.id == accountId }?.currency ?: "USD",
-                timestamp = txTimestamp,
-                note = state.note.trim()
-            )
+            val selectedCurrency = state.accounts.firstOrNull { it.id == accountId }?.currency ?: "USD"
 
-            val result = createTransactionUseCase(newTx)
+            val result = if (state.isEditing && state.editingTransactionId != null) {
+                val updatedTx = Transaction(
+                    id = state.editingTransactionId,
+                    accountId = accountId,
+                    categoryId = categoryId,
+                    type = state.type,
+                    amount = amount,
+                    currency = selectedCurrency,
+                    timestamp = txTimestamp,
+                    note = state.note.trim()
+                )
+                updateTransactionUseCase(updatedTx)
+            } else {
+                val newTx = Transaction(
+                    id = "tx_${now}_${(100..999).random()}",
+                    accountId = accountId,
+                    categoryId = categoryId,
+                    type = state.type,
+                    amount = amount,
+                    currency = selectedCurrency,
+                    timestamp = txTimestamp,
+                    note = state.note.trim()
+                )
+                createTransactionUseCase(newTx)
+            }
+
             _isSubmitting.value = false
             if (result.isSuccess) {
                 _form.value = FormFields()
                 _isSuccess.value = true
                 onSuccess()
             } else {
-                _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al registrar la transacción"
+                _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al guardar la transacción"
             }
         }
     }

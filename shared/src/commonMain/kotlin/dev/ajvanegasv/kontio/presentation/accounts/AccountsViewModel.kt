@@ -11,6 +11,7 @@ import dev.ajvanegasv.kontio.domain.repository.TransactionRepository
 import dev.ajvanegasv.kontio.domain.usecase.CreateAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteTransactionUseCase
+import dev.ajvanegasv.kontio.domain.usecase.ReassignTransactionsAccountUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -39,6 +40,7 @@ class AccountsViewModel(
     private val createAccountUseCase: CreateAccountUseCase = AppContainer.createAccountUseCase,
     private val deleteAccountUseCase: DeleteAccountUseCase = AppContainer.deleteAccountUseCase,
     private val deleteTransactionUseCase: DeleteTransactionUseCase = AppContainer.deleteTransactionUseCase,
+    private val reassignTransactionsAccountUseCase: ReassignTransactionsAccountUseCase = AppContainer.reassignTransactionsAccountUseCase,
     coroutineScope: CoroutineScope? = null
 ) : ViewModel() {
 
@@ -163,6 +165,25 @@ class AccountsViewModel(
     fun deleteTransaction(transactionId: String, onComplete: (Result<Unit>) -> Unit = {}) {
         scope.launch {
             val result = deleteTransactionUseCase(transactionId)
+            onComplete(result)
+        }
+    }
+
+    fun reassignAccountTransactions(
+        fromAccountId: String,
+        toAccountId: String,
+        transactionIds: List<String>? = null,
+        onComplete: (Result<Int>) -> Unit = {}
+    ) {
+        scope.launch {
+            val result = reassignTransactionsAccountUseCase(
+                fromAccountId = fromAccountId,
+                toAccountId = toAccountId,
+                transactionIds = transactionIds
+            )
+            if (result.isFailure) {
+                _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al reasignar transacciones"
+            }
             onComplete(result)
         }
     }

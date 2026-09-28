@@ -423,6 +423,7 @@ fun TransactionsScreen(
                         TransactionItemRow(
                             transaction = item,
                             onClick = { onTransactionClick(item) },
+                            onEdit = { onTransactionClick(item) },
                             onDelete = { viewModel.requestDelete(item) }
                         )
                     }
@@ -554,6 +555,7 @@ private fun FilterPill(
 private fun TransactionItemRow(
     transaction: TransactionItemUiModel,
     onClick: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -628,7 +630,7 @@ private fun TransactionItemRow(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
                     text = transaction.amountFormatted,
@@ -636,6 +638,18 @@ private fun TransactionItemRow(
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold
                 )
+
+                IconButton(
+                    onClick = onEdit,
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Icon(
+                        imageVector = DashboardIcons.Edit,
+                        contentDescription = "Editar",
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
 
                 IconButton(
                     onClick = onDelete,
