@@ -1,8 +1,8 @@
 package dev.ajvanegasv.kontio.presentation.more
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,23 +18,31 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.ajvanegasv.kontio.di.AppContainer
+import dev.ajvanegasv.kontio.domain.model.ThemeMode
 import dev.ajvanegasv.kontio.presentation.backup.BackupViewModel
 import dev.ajvanegasv.kontio.presentation.backup.components.BackupSettingsCard
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardIcons
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
+import dev.ajvanegasv.kontio.presentation.designsystem.theme.isKontioDarkTheme
 
 @Composable
 fun MoreScreen(
@@ -47,7 +55,11 @@ fun MoreScreen(
     val categories by AppContainer.categoryRepository.getCategories().collectAsState(initial = emptyList())
     val apiKey by AppContainer.aiConfigStorage.apiKeyFlow.collectAsState(initial = AppContainer.aiConfigStorage.getApiKey())
     val isAiConfigured = !apiKey.isNullOrBlank()
-    val isDark = isSystemInDarkTheme()
+    val isDark = isKontioDarkTheme()
+    val themeMode by AppContainer.themeConfigStorage.themeModeFlow.collectAsState(
+        initial = AppContainer.themeConfigStorage.getThemeMode()
+    )
+    var isThemeDialogOpen by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -111,6 +123,102 @@ fun MoreScreen(
                     letterSpacing = 1.sp,
                     modifier = Modifier.padding(start = 4.dp)
                 )
+
+                // Tarjeta de Selección de Tema
+                KontioGlassCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = { isThemeDialogOpen = true }),
+                    shape = RoundedCornerShape(20.dp),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = when (themeMode) {
+                                        ThemeMode.SYSTEM -> DashboardIcons.BrightnessAuto
+                                        ThemeMode.LIGHT -> DashboardIcons.LightMode
+                                        ThemeMode.DARK -> DashboardIcons.DarkMode
+                                    },
+                                    contentDescription = "Tema de la aplicación",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(14.dp))
+
+                            Column {
+                                Text(
+                                    text = "Tema de la aplicación",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = when (themeMode) {
+                                        ThemeMode.SYSTEM -> "Predeterminado del sistema (teléfono)"
+                                        ThemeMode.LIGHT -> "Modo claro siempre activo"
+                                        ThemeMode.DARK -> "Modo oscuro siempre activo"
+                                    },
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    lineHeight = 16.sp
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceContainer.copy(
+                                            alpha = if (isDark) 0.40f else 0.70f
+                                        )
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = when (themeMode) {
+                                        ThemeMode.SYSTEM -> "Sistema"
+                                        ThemeMode.LIGHT -> "Claro"
+                                        ThemeMode.DARK -> "Oscuro"
+                                    },
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            Icon(
+                                imageVector = DashboardIcons.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
 
                 // Tarjeta de Categorías
                 KontioGlassCard(
@@ -350,6 +458,166 @@ fun MoreScreen(
                         lineHeight = 17.sp
                     )
                 }
+            }
+        }
+    }
+
+    if (isThemeDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { isThemeDialogOpen = false },
+            title = {
+                Text(
+                    text = "Tema de la aplicación",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Selecciona la apariencia visual que prefieras para Kontio:",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+
+                    ThemeOptionRow(
+                        title = "Predeterminado del sistema",
+                        description = "Se adapta automáticamente al tema de tu teléfono",
+                        icon = DashboardIcons.BrightnessAuto,
+                        isSelected = themeMode == ThemeMode.SYSTEM,
+                        onClick = {
+                            AppContainer.themeConfigStorage.setThemeMode(ThemeMode.SYSTEM)
+                            isThemeDialogOpen = false
+                        }
+                    )
+
+                    ThemeOptionRow(
+                        title = "Modo claro",
+                        description = "Apariencia clara con fondos limpios y contrastes nítidos",
+                        icon = DashboardIcons.LightMode,
+                        isSelected = themeMode == ThemeMode.LIGHT,
+                        onClick = {
+                            AppContainer.themeConfigStorage.setThemeMode(ThemeMode.LIGHT)
+                            isThemeDialogOpen = false
+                        }
+                    )
+
+                    ThemeOptionRow(
+                        title = "Modo oscuro",
+                        description = "Apariencia oscura para reducir fatiga visual y ahorrar batería",
+                        icon = DashboardIcons.DarkMode,
+                        isSelected = themeMode == ThemeMode.DARK,
+                        onClick = {
+                            AppContainer.themeConfigStorage.setThemeMode(ThemeMode.DARK)
+                            isThemeDialogOpen = false
+                        }
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { isThemeDialogOpen = false }) {
+                    Text(
+                        text = "Cerrar",
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            },
+            shape = RoundedCornerShape(24.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        )
+    }
+}
+
+@Composable
+private fun ThemeOptionRow(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val borderColor = if (isSelected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+    }
+
+    val backgroundColor = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+    } else {
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.40f)
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .border(
+                width = if (isSelected) 1.5.dp else 1.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .background(backgroundColor)
+            .clickable(onClick = onClick)
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(
+                    if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                    else MaterialTheme.colorScheme.surfaceContainerHigh
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = description,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 15.sp
+            )
+        }
+
+        if (isSelected) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = DashboardIcons.Check,
+                    contentDescription = "Seleccionado",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
     }

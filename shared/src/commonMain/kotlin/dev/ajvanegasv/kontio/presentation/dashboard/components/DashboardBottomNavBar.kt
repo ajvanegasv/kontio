@@ -3,7 +3,7 @@ package dev.ajvanegasv.kontio.presentation.dashboard.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
+import dev.ajvanegasv.kontio.presentation.designsystem.theme.isKontioDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,7 +58,7 @@ fun DashboardBottomNavBar(
     onTabSelected: (DashboardTab) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isKontioDarkTheme()
     val topBorderColor = if (isDark) Color.White.copy(alpha = 0.20f) else Color.Black.copy(alpha = 0.06f)
     val navShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
 
@@ -158,7 +158,7 @@ private fun DashboardNavItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isKontioDarkTheme()
     val contentColor = if (isSelected) {
         MaterialTheme.colorScheme.secondary
     } else {

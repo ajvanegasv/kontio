@@ -122,6 +122,10 @@ object AppContainer {
         dev.ajvanegasv.kontio.data.local.getAiConfigStorage()
     }
 
+    val themeConfigStorage: dev.ajvanegasv.kontio.data.local.ThemeConfigStorage by lazy {
+        dev.ajvanegasv.kontio.data.local.getThemeConfigStorage()
+    }
+
     val geminiApiClient: dev.ajvanegasv.kontio.data.remote.gemini.GeminiApiClient by lazy {
         dev.ajvanegasv.kontio.data.remote.gemini.GeminiApiClient()
     }

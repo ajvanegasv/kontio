@@ -3,7 +3,7 @@ package dev.ajvanegasv.kontio.presentation.dashboard.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
+import dev.ajvanegasv.kontio.presentation.designsystem.theme.isKontioDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -47,7 +47,7 @@ fun MainBalanceCard(
     balance: String = "$12,450.80",
     onAddFundsClick: () -> Unit = {}
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isKontioDarkTheme()
     val glowAlpha = if (isDark) 0.25f else 0.18f
     val buttonGradientColors = if (isDark) {
         listOf(MaterialTheme.colorScheme.inversePrimary, MaterialTheme.colorScheme.secondaryContainer)

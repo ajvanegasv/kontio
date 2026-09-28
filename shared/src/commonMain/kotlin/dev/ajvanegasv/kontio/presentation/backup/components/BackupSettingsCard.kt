@@ -1,6 +1,6 @@
 package dev.ajvanegasv.kontio.presentation.backup.components
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import dev.ajvanegasv.kontio.presentation.designsystem.theme.isKontioDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -41,7 +41,7 @@ fun BackupSettingsCard(
     onRestoreClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isKontioDarkTheme()
 
     KontioGlassCard(
         modifier = modifier.fillMaxWidth(),

@@ -4,7 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
+import dev.ajvanegasv.kontio.presentation.designsystem.theme.isKontioDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,7 +48,7 @@ fun DashboardTopAppBar(
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {}
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isKontioDarkTheme()
     val bottomBorderColor = if (isDark) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.08f)
 
     Box(

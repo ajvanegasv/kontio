@@ -1,9 +1,9 @@
 package dev.ajvanegasv.kontio.presentation.designsystem.glass
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import dev.ajvanegasv.kontio.presentation.designsystem.theme.isKontioDarkTheme
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -44,7 +44,7 @@ object GlassTokens {
      */
     @Composable
     fun shadowAmbientColor(): Color {
-        val isDark = isSystemInDarkTheme()
+        val isDark = isKontioDarkTheme()
         return if (isDark) {
             Color.Black.copy(alpha = 0.40f)
         } else {
@@ -54,7 +54,7 @@ object GlassTokens {
 
     @Composable
     fun shadowSpotColor(): Color {
-        val isDark = isSystemInDarkTheme()
+        val isDark = isKontioDarkTheme()
         return if (isDark) {
             Color.Black.copy(alpha = 0.60f)
         } else {
@@ -68,7 +68,7 @@ object GlassTokens {
      */
     @Composable
     fun cardStyle(): HazeStyle {
-        val isDark = isSystemInDarkTheme()
+        val isDark = isKontioDarkTheme()
         val surface = MaterialTheme.colorScheme.surface
         val alpha = if (isDark) 0.60f else 0.55f
         return HazeStyle(
@@ -84,7 +84,7 @@ object GlassTokens {
      */
     @Composable
     fun dockStyle(): HazeStyle {
-        val isDark = isSystemInDarkTheme()
+        val isDark = isKontioDarkTheme()
         val surface = MaterialTheme.colorScheme.surfaceContainer
         val alpha = if (isDark) 0.55f else 0.60f
         return HazeStyle(
@@ -100,7 +100,7 @@ object GlassTokens {
      */
     @Composable
     fun topAppBarStyle(): HazeStyle {
-        val isDark = isSystemInDarkTheme()
+        val isDark = isKontioDarkTheme()
         val surface = MaterialTheme.colorScheme.surface
         val alpha = if (isDark) 0.50f else 0.55f
         return HazeStyle(
@@ -119,7 +119,7 @@ object GlassTokens {
      */
     @Composable
     fun modalStyle(): HazeStyle {
-        val isDark = isSystemInDarkTheme()
+        val isDark = isKontioDarkTheme()
         val surface = MaterialTheme.colorScheme.surfaceContainerHigh
         val alpha = if (isDark) 0.88f else 0.92f
         return HazeStyle(
@@ -137,7 +137,7 @@ object GlassTokens {
      */
     @Composable
     fun scrimBlurStyle(): HazeStyle {
-        val isDark = isSystemInDarkTheme()
+        val isDark = isKontioDarkTheme()
         val scrimAlpha = if (isDark) 0.60f else 0.40f
         return HazeStyle(
             backgroundColor = Color.Transparent,
@@ -154,7 +154,7 @@ object GlassTokens {
      */
     @Composable
     fun specularBorderBrush(): Brush {
-        val isDark = isSystemInDarkTheme()
+        val isDark = isKontioDarkTheme()
         return if (isDark) {
             Brush.verticalGradient(
                 colors = listOf(

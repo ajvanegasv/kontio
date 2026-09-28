@@ -6,7 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import dev.ajvanegasv.kontio.presentation.designsystem.theme.isKontioDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -78,7 +78,7 @@ fun ImportStatementBottomSheet(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsState()
-    val isDark = isSystemInDarkTheme()
+    val isDark = isKontioDarkTheme()
     var isEditingApiKey by remember { mutableStateOf(false) }
     var itemForCategorySelection by remember { mutableStateOf<ParsedStatementItem?>(null) }
 
@@ -251,7 +251,7 @@ private fun FileSelectionSection(
     onAnalyzeClick: () -> Unit,
     onEditApiKeyClick: () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isKontioDarkTheme()
     val launchFilePicker = rememberStatementFilePicker(onFileSelected = onFileSelected)
 
     Column(
@@ -524,7 +524,7 @@ private fun ReviewStatementSection(
     onCancel: () -> Unit
 ) {
     val result = state.parsedResult ?: return
-    val isDark = isSystemInDarkTheme()
+    val isDark = isKontioDarkTheme()
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Encabezado del banco detectado
