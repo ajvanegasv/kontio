@@ -50,4 +50,10 @@ interface TransactionDao {
 
     @Query("SELECT COUNT(*) FROM transactions WHERE categoryId = :categoryId")
     suspend fun getTransactionsCountByCategoryId(categoryId: String): Int
+
+    @Query("SELECT * FROM transactions WHERE LOWER(note) LIKE '%' || LOWER(:query) || '%' ORDER BY timestamp DESC")
+    suspend fun searchTransactionsByNote(query: String): List<TransactionEntity>
+
+    @Query("SELECT * FROM transactions WHERE timestamp >= :startDate AND timestamp <= :endDate ORDER BY timestamp DESC")
+    suspend fun getTransactionsInDateRangeDirect(startDate: Long, endDate: Long): List<TransactionEntity>
 }

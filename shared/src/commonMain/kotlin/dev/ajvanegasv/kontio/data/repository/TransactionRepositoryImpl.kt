@@ -126,4 +126,47 @@ class TransactionRepositoryImpl(
     override suspend fun getTransactionsCountByCategory(categoryId: String): Int {
         return transactionDao.getTransactionsCountByCategoryId(categoryId)
     }
+
+    override suspend fun searchTransactions(query: String): List<Transaction> {
+        val trimmed = query.trim().lowercase()
+        val allCategories = categoryDao.getAllCategoriesDirect().map { it.toDomain() }
+        val allAccounts = accountDao.getAllAccountsDirect().map { it.toDomain() }
+        val catMap = allCategories.associateBy { it.id }
+        val accMap = allAccounts.associateBy { it.id }
+
+        // Si la búsqueda coincide con un nombre de categoría, traemos transacciones de esa categoría
+        val matchingCatIds = allCategories
+            .filter { it.name.lowercase().contains(trimmed) }
+            .map { it.id }
+            .toSet()
+
+        val byNote = transactionDao.searchTransactionsByNote(trimmed)
+        val allMatching = if (matchingCatIds.isNotEmpty()) {
+            transactionDao.getAllTransactionsDirect().filter { it.categoryId in matchingCatIds }
+        } else {
+            emptyList()
+        }
+
+        val combined = (byNote + allMatching).distinctBy { it.id }.sortedByDescending { it.timestamp }
+        return combined.map { entity ->
+            val domain = entity.toDomain()
+            domain.copy(
+                category = catMap[domain.categoryId],
+                account = accMap[domain.accountId]
+            )
+        }
+    }
+
+    override suspend fun getTransactionsInDateRangeDirect(startDate: Long, endDate: Long): List<Transaction> {
+        val allCategories = categoryDao.getAllCategoriesDirect().associate { it.id to it.toDomain() }
+        val allAccounts = accountDao.getAllAccountsDirect().associate { it.id to it.toDomain() }
+        val entities = transactionDao.getTransactionsInDateRangeDirect(startDate, endDate)
+        return entities.map { entity ->
+            val domain = entity.toDomain()
+            domain.copy(
+                category = allCategories[domain.categoryId],
+                account = allAccounts[domain.accountId]
+            )
+        }
+    }
 }

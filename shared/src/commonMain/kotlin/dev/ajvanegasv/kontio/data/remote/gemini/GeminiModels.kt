@@ -3,12 +3,16 @@ package dev.ajvanegasv.kontio.data.remote.gemini
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+
 @Serializable
 data class GeminiRequest(
     val contents: List<GeminiContent>,
     @SerialName("system_instruction")
     val systemInstruction: GeminiContent? = null,
-    val generationConfig: GeminiGenerationConfig? = null
+    val generationConfig: GeminiGenerationConfig? = null,
+    val tools: List<GeminiTool>? = null
 )
 
 @Serializable
@@ -21,7 +25,48 @@ data class GeminiContent(
 data class GeminiPart(
     val text: String? = null,
     @SerialName("inline_data")
-    val inlineData: GeminiInlineData? = null
+    val inlineData: GeminiInlineData? = null,
+    val functionCall: GeminiFunctionCall? = null,
+    val functionResponse: GeminiFunctionResponse? = null
+)
+
+@Serializable
+data class GeminiFunctionCall(
+    val name: String,
+    val args: Map<String, JsonElement>? = null
+)
+
+@Serializable
+data class GeminiFunctionResponse(
+    val name: String,
+    val response: JsonObject
+)
+
+@Serializable
+data class GeminiTool(
+    @SerialName("function_declarations")
+    val functionDeclarations: List<GeminiFunctionDeclaration>? = null
+)
+
+@Serializable
+data class GeminiFunctionDeclaration(
+    val name: String,
+    val description: String,
+    val parameters: GeminiFunctionParameters? = null
+)
+
+@Serializable
+data class GeminiFunctionParameters(
+    val type: String = "OBJECT",
+    val properties: Map<String, GeminiFunctionProperty> = emptyMap(),
+    val required: List<String> = emptyList()
+)
+
+@Serializable
+data class GeminiFunctionProperty(
+    val type: String,
+    val description: String? = null,
+    val enum: List<String>? = null
 )
 
 @Serializable

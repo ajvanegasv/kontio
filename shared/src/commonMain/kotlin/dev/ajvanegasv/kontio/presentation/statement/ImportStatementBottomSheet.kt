@@ -54,6 +54,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -907,7 +908,8 @@ private fun ApiKeySetupSection(
     onSaveApiKey: (apiKey: String, model: String) -> Unit,
     onCancel: (() -> Unit)? = null
 ) {
-    var apiKeyInput by remember { mutableStateOf(currentApiKey) }
+    val hasExistingKey = currentApiKey.isNotBlank()
+    var newApiKeyInput by remember { mutableStateOf("") }
     var selectedModel by remember(currentModel) { mutableStateOf(currentModel.removePrefix("models/").trim()) }
 
     Column(
@@ -952,14 +954,60 @@ private fun ApiKeySetupSection(
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        if (hasExistingKey) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f))
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = DashboardIcons.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "Clave API configurada (••••••••••••••••)",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Por seguridad, la clave actual está protegida. Escribe abajo para modificarla.",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+        }
+
         OutlinedTextField(
-            value = apiKeyInput,
-            onValueChange = { apiKeyInput = it },
-            label = { Text("API Key de Google Gemini") },
-            placeholder = { Text("AIzaSy...") },
+            value = newApiKeyInput,
+            onValueChange = { newApiKeyInput = it },
+            label = { Text(if (hasExistingKey) "Modificar API Key de Gemini" else "API Key de Google Gemini") },
+            placeholder = { Text(if (hasExistingKey) "Ingresa nueva clave para reemplazar..." else "AIzaSy...") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            visualTransformation = PasswordVisualTransformation(),
+            trailingIcon = if (newApiKeyInput.isNotEmpty()) {
+                {
+                    IconButton(onClick = { newApiKeyInput = "" }) {
+                        Icon(
+                            imageVector = DashboardIcons.Close,
+                            contentDescription = "Borrar texto",
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            } else null
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -1061,11 +1109,14 @@ private fun ApiKeySetupSection(
             }
 
             Button(
-                onClick = { onSaveApiKey(apiKeyInput, selectedModel) },
-                enabled = apiKeyInput.isNotBlank(),
+                onClick = {
+                    val finalKey = newApiKeyInput.trim().ifBlank { currentApiKey }
+                    onSaveApiKey(finalKey, selectedModel)
+                },
+                enabled = newApiKeyInput.isNotBlank() || hasExistingKey,
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Guardar Clave")
+                Text(if (hasExistingKey && newApiKeyInput.isBlank()) "Guardar Modelo" else "Guardar Clave")
             }
         }
     }

@@ -71,6 +71,16 @@ class ImportStatementViewModel(
             }
         }
         viewModelScope.launch {
+            aiConfigStorage.apiKeyFlow.collect { key ->
+                _uiState.update {
+                    it.copy(
+                        apiKey = key,
+                        isApiKeyConfigured = !key.isNullOrBlank()
+                    )
+                }
+            }
+        }
+        viewModelScope.launch {
             aiConfigStorage.modelFlow.collect { currentModel ->
                 val clean = currentModel.removePrefix("models/").trim()
                 _uiState.update { it.copy(model = clean) }
@@ -103,7 +113,7 @@ class ImportStatementViewModel(
     }
 
     fun saveApiKey(key: String, model: String = _uiState.value.model) {
-        val cleanModel = model.removePrefix("models/").trim().ifBlank { "gemini-2.5-flash" }
+        val cleanModel = model.removePrefix("models/").trim().ifBlank { GeminiApiClient.DEFAULT_MODEL }
         aiConfigStorage.setApiKey(key)
         aiConfigStorage.setModel(cleanModel)
         _uiState.update {
@@ -120,7 +130,7 @@ class ImportStatementViewModel(
     }
 
     fun setModel(model: String) {
-        val cleanModel = model.removePrefix("models/").trim().ifBlank { "gemini-2.5-flash" }
+        val cleanModel = model.removePrefix("models/").trim().ifBlank { GeminiApiClient.DEFAULT_MODEL }
         aiConfigStorage.setModel(cleanModel)
         _uiState.update { it.copy(model = cleanModel) }
     }

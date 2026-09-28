@@ -19,6 +19,10 @@ class AnalyzeBankStatementUseCase(
 ) {
     suspend operator fun invoke(file: StatementFile): Result<ParsedStatementResult> {
         return runCatching {
+            if (!aiConfigStorage.isAiEnabled()) {
+                throw IllegalStateException("La Inteligencia Artificial está desactivada en la configuración. Puedes habilitarla en Más > Configuración de IA.")
+            }
+
             val apiKey = aiConfigStorage.getApiKey()
             if (apiKey.isNullOrBlank()) {
                 throw IllegalStateException("No has configurado una API Key de Google Gemini. Por favor agrégala en Más > Configuración de IA.")
@@ -32,7 +36,7 @@ class AnalyzeBankStatementUseCase(
             }
 
             val storedModel = aiConfigStorage.getModel().removePrefix("models/").trim()
-            val model = if (storedModel.contains("1.5-flash") || storedModel.contains("2.0-flash") || storedModel.contains("2.5-flash") || storedModel.isBlank()) {
+            val model = if (storedModel.contains("1.5-flash") || storedModel.contains("2.0-flash") || storedModel.isBlank()) {
                 val defaultModel = dev.ajvanegasv.kontio.data.remote.gemini.GeminiApiClient.DEFAULT_MODEL
                 aiConfigStorage.setModel(defaultModel)
                 defaultModel

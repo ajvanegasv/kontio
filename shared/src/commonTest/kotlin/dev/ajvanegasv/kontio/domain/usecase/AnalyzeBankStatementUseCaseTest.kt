@@ -25,16 +25,27 @@ class AnalyzeBankStatementUseCaseTest {
 
     private class FakeAiConfigStorage(
         private var key: String? = null,
-        private var currentModel: String = "gemini-3.8-flash"
+        private var currentModel: String = "gemini-3.8-flash",
+        private var enabled: Boolean = true
     ) : AiConfigStorage {
         override val apiKeyFlow: Flow<String?> = flowOf(key)
         override fun getApiKey(): String? = key
-        override fun setApiKey(apiKey: String) { key = apiKey }
-        override fun clearApiKey() { key = null }
+        override fun setApiKey(apiKey: String) { 
+            key = apiKey 
+            enabled = true
+        }
+        override fun clearApiKey() { 
+            key = null 
+            enabled = false
+        }
 
         override val modelFlow: Flow<String> = flowOf(currentModel)
         override fun getModel(): String = currentModel
         override fun setModel(model: String) { currentModel = model }
+
+        override val isAiEnabledFlow: Flow<Boolean> = flowOf(enabled)
+        override fun isAiEnabled(): Boolean = enabled
+        override fun setAiEnabled(enabled: Boolean) { this.enabled = enabled }
     }
 
     private class FakeCategoryRepository : CategoryRepository {
@@ -68,6 +79,24 @@ class AnalyzeBankStatementUseCaseTest {
         override suspend fun deleteTransactionsByAccountId(accountId: String) {}
         override suspend fun getTransactionsCount(): Int = existingTx.size
         override suspend fun getTransactionsCountByCategory(categoryId: String): Int = 0
+    }
+
+    @Test
+    fun testAnalyzeStatementThrowsWhenAiDisabled() = runBlocking {
+        val configStorage = FakeAiConfigStorage(key = "valid-key", enabled = false)
+        val useCase = AnalyzeBankStatementUseCase(
+            geminiStatementParser = GeminiStatementParser(),
+            categoryRepository = FakeCategoryRepository(),
+            accountRepository = FakeAccountRepository(),
+            transactionRepository = FakeTransactionRepository(),
+            aiConfigStorage = configStorage
+        )
+
+        val file = StatementFile(name = "test.csv", mimeType = "text/csv", bytes = "date,amount".encodeToByteArray())
+        val result = useCase(file)
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message?.contains("desactivada") == true)
     }
 
     @Test

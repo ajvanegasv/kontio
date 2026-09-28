@@ -151,6 +151,28 @@ object AppContainer {
         )
     }
 
+    val getAnalyticsSummaryUseCase: dev.ajvanegasv.kontio.domain.usecase.GetAnalyticsSummaryUseCase by lazy {
+        dev.ajvanegasv.kontio.domain.usecase.GetAnalyticsSummaryUseCase(
+            transactionRepository = transactionRepository,
+            categoryRepository = categoryRepository
+        )
+    }
+
+    val financialToolExecutor: dev.ajvanegasv.kontio.domain.usecase.FinancialToolExecutor by lazy {
+        dev.ajvanegasv.kontio.domain.usecase.FinancialToolExecutor(
+            transactionRepository = transactionRepository,
+            categoryRepository = categoryRepository
+        )
+    }
+
+    val aiFinancialAdvisorUseCase: dev.ajvanegasv.kontio.domain.usecase.AiFinancialAdvisorUseCase by lazy {
+        dev.ajvanegasv.kontio.domain.usecase.AiFinancialAdvisorUseCase(
+            toolExecutor = financialToolExecutor,
+            aiConfigStorage = aiConfigStorage,
+            geminiApiClient = geminiApiClient
+        )
+    }
+
     fun initializeApp(scope: CoroutineScope = CoroutineScope(Dispatchers.IO)) {
         scope.launch {
             categoryRepository.seedDefaultCategoriesIfEmpty()

@@ -19,16 +19,20 @@ class AndroidAiConfigStorage(context: Context) : AiConfigStorage {
         val trimmed = apiKey.trim()
         prefs.edit().putString(KEY_API_KEY, trimmed).apply()
         _apiKeyFlow.value = trimmed
+        if (trimmed.isNotBlank()) {
+            setAiEnabled(true)
+        }
     }
 
     override fun clearApiKey() {
         prefs.edit().remove(KEY_API_KEY).apply()
         _apiKeyFlow.value = null
+        setAiEnabled(false)
     }
 
     private val _modelFlow: MutableStateFlow<String> = MutableStateFlow(
         prefs.getString(KEY_MODEL, DEFAULT_MODEL).let {
-            if (it == null || it.contains("1.5-flash") || it.contains("2.0-flash") || it.contains("2.5-flash")) {
+            if (it == null || it.contains("1.5-flash") || it.contains("2.0-flash")) {
                 prefs.edit().putString(KEY_MODEL, DEFAULT_MODEL).apply()
                 DEFAULT_MODEL
             } else {
@@ -40,7 +44,7 @@ class AndroidAiConfigStorage(context: Context) : AiConfigStorage {
 
     override fun getModel(): String {
         val stored = prefs.getString(KEY_MODEL, DEFAULT_MODEL) ?: DEFAULT_MODEL
-        if (stored.contains("1.5-flash") || stored.contains("2.0-flash") || stored.contains("2.5-flash")) {
+        if (stored.contains("1.5-flash") || stored.contains("2.0-flash")) {
             setModel(DEFAULT_MODEL)
             return DEFAULT_MODEL
         }
@@ -49,14 +53,28 @@ class AndroidAiConfigStorage(context: Context) : AiConfigStorage {
 
     override fun setModel(model: String) {
         val clean = model.removePrefix("models/").trim().ifBlank { DEFAULT_MODEL }
-        val target = if (clean.contains("1.5-flash") || clean.contains("2.0-flash") || clean.contains("2.5-flash")) DEFAULT_MODEL else clean
-        prefs.edit().putString(KEY_MODEL, target).apply()
-        _modelFlow.value = target
+        prefs.edit().putString(KEY_MODEL, clean).apply()
+        _modelFlow.value = clean
+    }
+
+    private val _isAiEnabledFlow = MutableStateFlow(
+        prefs.getBoolean(KEY_AI_ENABLED, !prefs.getString(KEY_API_KEY, null).isNullOrBlank())
+    )
+    override val isAiEnabledFlow: Flow<Boolean> = _isAiEnabledFlow.asStateFlow()
+
+    override fun isAiEnabled(): Boolean {
+        return prefs.getBoolean(KEY_AI_ENABLED, !getApiKey().isNullOrBlank())
+    }
+
+    override fun setAiEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_AI_ENABLED, enabled).apply()
+        _isAiEnabledFlow.value = enabled
     }
 
     companion object {
         private const val KEY_API_KEY = "gemini_api_key"
         private const val KEY_MODEL = "gemini_model"
+        private const val KEY_AI_ENABLED = "gemini_ai_enabled"
         const val DEFAULT_MODEL = "gemini-3.8-flash"
     }
 }

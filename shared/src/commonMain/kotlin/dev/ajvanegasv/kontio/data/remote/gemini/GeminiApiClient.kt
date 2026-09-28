@@ -25,6 +25,17 @@ class GeminiApiClient(
         request: GeminiRequest,
         model: String = DEFAULT_MODEL
     ): Result<String> {
+        return generateCandidate(apiKey, request, model).mapCatching { candidate ->
+            candidate.content?.parts?.firstOrNull()?.text
+                ?: throw IllegalStateException("La respuesta de Gemini no contiene texto")
+        }
+    }
+
+    suspend fun generateCandidate(
+        apiKey: String,
+        request: GeminiRequest,
+        model: String = DEFAULT_MODEL
+    ): Result<GeminiCandidate> {
         val initialCandidates = buildList {
             val clean = model.removePrefix("models/").trim()
             if (clean.isNotBlank()) add(clean)
@@ -37,7 +48,7 @@ class GeminiApiClient(
         var lastException: Throwable = IllegalStateException("No hay modelos disponibles")
 
         for (candidateModel in initialCandidates) {
-            val result = executeSingleGenerateContent(apiKey, request, candidateModel)
+            val result = executeSingleCandidateRequest(apiKey, request, candidateModel)
             if (result.isSuccess) {
                 return result
             }
@@ -59,7 +70,7 @@ class GeminiApiClient(
             val remainingCandidates = dynamicModels.filter { it !in initialCandidates }
 
             for (candidateModel in remainingCandidates) {
-                val result = executeSingleGenerateContent(apiKey, request, candidateModel)
+                val result = executeSingleCandidateRequest(apiKey, request, candidateModel)
                 if (result.isSuccess) {
                     return result
                 }
@@ -119,11 +130,11 @@ class GeminiApiClient(
         )
     }
 
-    private suspend fun executeSingleGenerateContent(
+    private suspend fun executeSingleCandidateRequest(
         apiKey: String,
         request: GeminiRequest,
         model: String
-    ): Result<String> = runCatching {
+    ): Result<GeminiCandidate> = runCatching {
         require(apiKey.isNotBlank()) { "Se requiere una API Key de Gemini válida" }
         val cleanModel = model.removePrefix("models/").trim()
         val url = "https://generativelanguage.googleapis.com/v1beta/models/$cleanModel:generateContent?key=$apiKey"
@@ -151,13 +162,8 @@ class GeminiApiClient(
         }
 
         val parsedResponse = json.decodeFromString<GeminiResponse>(responseText)
-        val candidate = parsedResponse.candidates?.firstOrNull()
+        parsedResponse.candidates?.firstOrNull()
             ?: throw IllegalStateException("Gemini no devolvió ninguna respuesta")
-
-        val textPart = candidate.content?.parts?.firstOrNull()?.text
-            ?: throw IllegalStateException("La respuesta de Gemini no contiene texto")
-
-        textPart
     }
 
     private fun isModelAvailabilityError(msg: String): Boolean {

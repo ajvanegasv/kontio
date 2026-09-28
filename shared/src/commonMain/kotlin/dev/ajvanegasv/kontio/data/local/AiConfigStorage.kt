@@ -11,6 +11,10 @@ interface AiConfigStorage {
     val modelFlow: Flow<String>
     fun getModel(): String
     fun setModel(model: String)
+
+    val isAiEnabledFlow: Flow<Boolean>
+    fun isAiEnabled(): Boolean
+    fun setAiEnabled(enabled: Boolean)
 }
 
 expect fun getAiConfigStorage(): AiConfigStorage

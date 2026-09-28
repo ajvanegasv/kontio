@@ -36,6 +36,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.ajvanegasv.kontio.presentation.accounts.AccountsScreen
 import dev.ajvanegasv.kontio.presentation.accounts.AccountsViewModel
 import dev.ajvanegasv.kontio.presentation.accounts.components.AddAccountBottomSheet
+import dev.ajvanegasv.kontio.presentation.analytics.AnalyticsScreen
 import dev.ajvanegasv.kontio.presentation.backup.BackupViewModel
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardBottomNavBar
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardTab
@@ -251,29 +252,9 @@ fun Dashboard(
                         }
 
                         DashboardTab.STATS -> {
-                            // Vista independiente de Estadísticas Financieras
-                            LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .hazeSource(state = hazeState, zIndex = 0f),
-                                contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp, start = 20.dp, end = 20.dp),
-                                verticalArrangement = Arrangement.spacedBy(20.dp)
-                            ) {
-                                item {
-                                    QuickStatsSection(
-                                        incomeAmount = dashboardState.incomeAmount,
-                                        expensesAmount = dashboardState.expensesAmount
-                                    )
-                                }
-                                item {
-                                    RecentTransactionsSection(
-                                        transactions = dashboardState.transactions,
-                                        onSeeAllClick = onSeeAllTransactionsClick,
-                                        onTransactionClick = handleDashboardTransactionClick,
-                                        onDeleteTransaction = { tx -> transactionPendingDelete = tx }
-                                    )
-                                }
-                            }
+                            AnalyticsScreen(
+                                modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
+                            )
                         }
 
                         DashboardTab.ADD -> {

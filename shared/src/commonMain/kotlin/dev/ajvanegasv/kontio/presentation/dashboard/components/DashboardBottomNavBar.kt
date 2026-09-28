@@ -104,10 +104,10 @@ fun DashboardBottomNavBar(
                 onClick = { onTabSelected(DashboardTab.HOME) }
             )
 
-            // Stats
+            // Analytics
             DashboardNavItem(
                 icon = DashboardIcons.Leaderboard,
-                label = "Stats",
+                label = "Analytics",
                 isSelected = selectedTab == DashboardTab.STATS,
                 onClick = { onTabSelected(DashboardTab.STATS) }
             )

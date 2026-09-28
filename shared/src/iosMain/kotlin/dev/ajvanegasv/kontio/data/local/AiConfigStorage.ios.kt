@@ -19,16 +19,20 @@ class IosAiConfigStorage : AiConfigStorage {
         val trimmed = apiKey.trim()
         defaults.setObject(trimmed, forKey = KEY_API_KEY)
         _apiKeyFlow.value = trimmed
+        if (trimmed.isNotBlank()) {
+            setAiEnabled(true)
+        }
     }
 
     override fun clearApiKey() {
         defaults.removeObjectForKey(KEY_API_KEY)
         _apiKeyFlow.value = null
+        setAiEnabled(false)
     }
 
     private val _modelFlow: MutableStateFlow<String> = MutableStateFlow(
         defaults.stringForKey(KEY_MODEL).let {
-            if (it == null || it.contains("1.5-flash") || it.contains("2.0-flash") || it.contains("2.5-flash")) {
+            if (it == null || it.contains("1.5-flash") || it.contains("2.0-flash")) {
                 defaults.setObject(DEFAULT_MODEL, forKey = KEY_MODEL)
                 DEFAULT_MODEL
             } else {
@@ -40,7 +44,7 @@ class IosAiConfigStorage : AiConfigStorage {
 
     override fun getModel(): String {
         val stored = defaults.stringForKey(KEY_MODEL) ?: DEFAULT_MODEL
-        if (stored.contains("1.5-flash") || stored.contains("2.0-flash") || stored.contains("2.5-flash")) {
+        if (stored.contains("1.5-flash") || stored.contains("2.0-flash")) {
             setModel(DEFAULT_MODEL)
             return DEFAULT_MODEL
         }
@@ -49,14 +53,36 @@ class IosAiConfigStorage : AiConfigStorage {
 
     override fun setModel(model: String) {
         val clean = model.removePrefix("models/").trim().ifBlank { DEFAULT_MODEL }
-        val target = if (clean.contains("1.5-flash") || clean.contains("2.0-flash") || clean.contains("2.5-flash")) DEFAULT_MODEL else clean
-        defaults.setObject(target, forKey = KEY_MODEL)
-        _modelFlow.value = target
+        defaults.setObject(clean, forKey = KEY_MODEL)
+        _modelFlow.value = clean
+    }
+
+    private val _isAiEnabledFlow = MutableStateFlow(
+        if (defaults.objectForKey(KEY_AI_ENABLED) != null) {
+            defaults.boolForKey(KEY_AI_ENABLED)
+        } else {
+            !defaults.stringForKey(KEY_API_KEY).isNullOrBlank()
+        }
+    )
+    override val isAiEnabledFlow: Flow<Boolean> = _isAiEnabledFlow.asStateFlow()
+
+    override fun isAiEnabled(): Boolean {
+        return if (defaults.objectForKey(KEY_AI_ENABLED) != null) {
+            defaults.boolForKey(KEY_AI_ENABLED)
+        } else {
+            !getApiKey().isNullOrBlank()
+        }
+    }
+
+    override fun setAiEnabled(enabled: Boolean) {
+        defaults.setBool(enabled, forKey = KEY_AI_ENABLED)
+        _isAiEnabledFlow.value = enabled
     }
 
     companion object {
         private const val KEY_API_KEY = "kontio_gemini_api_key"
         private const val KEY_MODEL = "kontio_gemini_model"
+        private const val KEY_AI_ENABLED = "kontio_gemini_ai_enabled"
         const val DEFAULT_MODEL = "gemini-3.8-flash"
     }
 }

@@ -15,4 +15,6 @@ interface TransactionRepository {
     suspend fun deleteTransactionsByAccountId(accountId: String)
     suspend fun getTransactionsCount(): Int
     suspend fun getTransactionsCountByCategory(categoryId: String): Int
+    suspend fun searchTransactions(query: String): List<Transaction> = emptyList()
+    suspend fun getTransactionsInDateRangeDirect(startDate: Long, endDate: Long): List<Transaction> = emptyList()
 }

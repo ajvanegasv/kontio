@@ -43,6 +43,8 @@ import dev.ajvanegasv.kontio.presentation.backup.components.BackupSettingsCard
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardIcons
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 import dev.ajvanegasv.kontio.presentation.designsystem.theme.isKontioDarkTheme
+import dev.ajvanegasv.kontio.presentation.more.components.AiSettingsCard
+import dev.ajvanegasv.kontio.presentation.more.components.AiSettingsDialog
 
 @Composable
 fun MoreScreen(
@@ -54,12 +56,15 @@ fun MoreScreen(
     val backupState by backupViewModel.uiState.collectAsState()
     val categories by AppContainer.categoryRepository.getCategories().collectAsState(initial = emptyList())
     val apiKey by AppContainer.aiConfigStorage.apiKeyFlow.collectAsState(initial = AppContainer.aiConfigStorage.getApiKey())
+    val isAiEnabled by AppContainer.aiConfigStorage.isAiEnabledFlow.collectAsState(initial = AppContainer.aiConfigStorage.isAiEnabled())
+    val aiModel by AppContainer.aiConfigStorage.modelFlow.collectAsState(initial = AppContainer.aiConfigStorage.getModel())
     val isAiConfigured = !apiKey.isNullOrBlank()
     val isDark = isKontioDarkTheme()
     val themeMode by AppContainer.themeConfigStorage.themeModeFlow.collectAsState(
         initial = AppContainer.themeConfigStorage.getThemeMode()
     )
     var isThemeDialogOpen by remember { mutableStateOf(false) }
+    var isAiDialogOpen by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -319,6 +324,17 @@ fun MoreScreen(
                     modifier = Modifier.padding(start = 4.dp)
                 )
 
+                // Tarjeta de Configuración y Conexión de IA (Google Gemini)
+                AiSettingsCard(
+                    isAiEnabled = isAiEnabled,
+                    isConfigured = isAiConfigured,
+                    currentModel = aiModel,
+                    onConfigureClick = { isAiDialogOpen = true },
+                    onToggleAiEnabled = { enabled ->
+                        AppContainer.aiConfigStorage.setAiEnabled(enabled)
+                    }
+                )
+
                 KontioGlassCard(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -529,6 +545,26 @@ fun MoreScreen(
             },
             shape = RoundedCornerShape(24.dp),
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        )
+    }
+
+    if (isAiDialogOpen) {
+        AiSettingsDialog(
+            isOpen = isAiDialogOpen,
+            onDismiss = { isAiDialogOpen = false },
+            currentApiKey = apiKey,
+            currentModel = aiModel,
+            isAiEnabled = isAiEnabled,
+            onSave = { newApiKey, newModel, newEnabled ->
+                if (newApiKey.isNotBlank()) {
+                    AppContainer.aiConfigStorage.setApiKey(newApiKey)
+                }
+                AppContainer.aiConfigStorage.setModel(newModel)
+                AppContainer.aiConfigStorage.setAiEnabled(newEnabled)
+            },
+            onDisconnect = {
+                AppContainer.aiConfigStorage.clearApiKey()
+            }
         )
     }
 }
