@@ -27,11 +27,25 @@ class AnalyzeBankStatementUseCase(
             val categories = categoryRepository.getCategories().first()
             val accounts = accountRepository.getAccounts().first()
 
+            if (file.isPdf && file.bytes.size > 15 * 1024 * 1024) {
+                throw IllegalArgumentException("El archivo PDF supera los 15MB. Por favor selecciona un extracto de menor tamaño o con menos páginas.")
+            }
+
+            val storedModel = aiConfigStorage.getModel().removePrefix("models/").trim()
+            val model = if (storedModel.contains("1.5-flash") || storedModel.contains("2.0-flash") || storedModel.contains("2.5-flash") || storedModel.isBlank()) {
+                val defaultModel = dev.ajvanegasv.kontio.data.remote.gemini.GeminiApiClient.DEFAULT_MODEL
+                aiConfigStorage.setModel(defaultModel)
+                defaultModel
+            } else {
+                storedModel
+            }
+
             val rawResult = geminiStatementParser.parseStatement(
                 file = file,
                 apiKey = apiKey,
                 categories = categories,
-                accounts = accounts
+                accounts = accounts,
+                model = model
             ).getOrThrow()
 
             // Detección de duplicados cruzando con transacciones existentes en base de datos

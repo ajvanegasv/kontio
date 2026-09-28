@@ -163,8 +163,12 @@ fun ImportStatementBottomSheet(
             if (!state.isApiKeyConfigured || isEditingApiKey) {
                 ApiKeySetupSection(
                     currentApiKey = state.apiKey ?: "",
-                    onSaveApiKey = { key ->
-                        viewModel.saveApiKey(key)
+                    currentModel = state.model,
+                    availableModels = state.availableModels,
+                    isLoadingModels = state.isLoadingModels,
+                    onRefreshModels = { viewModel.refreshAvailableModels() },
+                    onSaveApiKey = { key, model ->
+                        viewModel.saveApiKey(key, model)
                         isEditingApiKey = false
                     },
                     onCancel = if (state.isApiKeyConfigured) { { isEditingApiKey = false } } else null
@@ -896,10 +900,15 @@ private fun ErrorSection(
 @Composable
 private fun ApiKeySetupSection(
     currentApiKey: String,
-    onSaveApiKey: (String) -> Unit,
+    currentModel: String,
+    availableModels: List<String>,
+    isLoadingModels: Boolean = false,
+    onRefreshModels: (() -> Unit)? = null,
+    onSaveApiKey: (apiKey: String, model: String) -> Unit,
     onCancel: (() -> Unit)? = null
 ) {
     var apiKeyInput by remember { mutableStateOf(currentApiKey) }
+    var selectedModel by remember(currentModel) { mutableStateOf(currentModel.removePrefix("models/").trim()) }
 
     Column(
         modifier = Modifier
@@ -934,7 +943,7 @@ private fun ApiKeySetupSection(
         Spacer(modifier = Modifier.height(6.dp))
 
         Text(
-            text = "Kontio utiliza la API de Gemini (2.0 / 1.5 Flash) para leer documentos PDF y CSV de forma privada y local. Tu clave se almacena exclusivamente en tu dispositivo.",
+            text = "Kontio utiliza la API de Gemini para leer documentos PDF y CSV de forma privada y local. Tu clave se almacena exclusivamente en tu dispositivo.",
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -961,6 +970,81 @@ private fun ApiKeySetupSection(
             color = MaterialTheme.colorScheme.primary
         )
 
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // Selector de modelo
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "MODELO DE IA",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    letterSpacing = 1.sp
+                )
+                if (onRefreshModels != null) {
+                    TextButton(
+                        onClick = onRefreshModels,
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                    ) {
+                        Text(
+                            text = if (isLoadingModels) "Buscando..." else "Detectar modelos",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(availableModels) { modelName ->
+                    val cleanName = modelName.removePrefix("models/").trim()
+                    val isSelected = cleanName.equals(selectedModel.removePrefix("models/").trim(), ignoreCase = true)
+                    val displayName = when (cleanName) {
+                        "gemini-2.5-flash" -> "2.5 Flash"
+                        "gemini-2.5-flash-lite" -> "2.5 Flash-Lite"
+                        "gemini-3.8-flash" -> "3.8 Flash"
+                        "gemini-3.5-flash-lite" -> "3.5 Flash-Lite"
+                        "gemini-2.5-pro" -> "2.5 Pro"
+                        else -> cleanName.removePrefix("gemini-").replaceFirstChar { it.uppercase() }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.3f)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .clickable { selectedModel = cleanName }
+                            .padding(vertical = 10.dp, horizontal = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = displayName,
+                            fontSize = 12.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
 
         Row(
@@ -977,7 +1061,7 @@ private fun ApiKeySetupSection(
             }
 
             Button(
-                onClick = { onSaveApiKey(apiKeyInput) },
+                onClick = { onSaveApiKey(apiKeyInput, selectedModel) },
                 enabled = apiKeyInput.isNotBlank(),
                 modifier = Modifier.weight(1f)
             ) {

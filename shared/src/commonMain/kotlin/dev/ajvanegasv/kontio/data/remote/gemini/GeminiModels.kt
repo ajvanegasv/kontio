@@ -76,3 +76,18 @@ data class RawStatementTransaction(
     val confidence: Float = 0.85f,
     val notes: String? = null
 )
+
+@Serializable
+data class GeminiModelListResponse(
+    val models: List<GeminiModelInfo>? = null,
+    val error: GeminiError? = null
+)
+
+@Serializable
+data class GeminiModelInfo(
+    val name: String,
+    val displayName: String? = null,
+    val description: String? = null,
+    val supportedGenerationMethods: List<String> = emptyList()
+)
+

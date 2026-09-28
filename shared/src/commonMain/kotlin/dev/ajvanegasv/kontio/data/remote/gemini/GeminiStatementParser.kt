@@ -30,7 +30,8 @@ open class GeminiStatementParser(
         file: StatementFile,
         apiKey: String,
         categories: List<Category>,
-        accounts: List<Account>
+        accounts: List<Account>,
+        model: String = GeminiApiClient.DEFAULT_MODEL
     ): Result<ParsedStatementResult> {
         return runCatching {
             val categoriesJson = buildJsonArray {
@@ -139,7 +140,11 @@ open class GeminiStatementParser(
                 )
             )
 
-            val rawJson = geminiApiClient.generateContent(apiKey = apiKey, request = request).getOrThrow()
+            val rawJson = geminiApiClient.generateContent(
+                apiKey = apiKey,
+                request = request,
+                model = model
+            ).getOrThrow()
             val analysis = json.decodeFromString<RawStatementAnalysis>(rawJson)
 
             val nowMillis = Clock.System.now().toEpochMilliseconds()

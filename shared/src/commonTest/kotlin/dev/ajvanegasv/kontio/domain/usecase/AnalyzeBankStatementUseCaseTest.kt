@@ -23,11 +23,18 @@ import kotlin.test.assertTrue
 
 class AnalyzeBankStatementUseCaseTest {
 
-    private class FakeAiConfigStorage(var key: String? = null) : AiConfigStorage {
+    private class FakeAiConfigStorage(
+        private var key: String? = null,
+        private var currentModel: String = "gemini-3.8-flash"
+    ) : AiConfigStorage {
         override val apiKeyFlow: Flow<String?> = flowOf(key)
         override fun getApiKey(): String? = key
         override fun setApiKey(apiKey: String) { key = apiKey }
         override fun clearApiKey() { key = null }
+
+        override val modelFlow: Flow<String> = flowOf(currentModel)
+        override fun getModel(): String = currentModel
+        override fun setModel(model: String) { currentModel = model }
     }
 
     private class FakeCategoryRepository : CategoryRepository {

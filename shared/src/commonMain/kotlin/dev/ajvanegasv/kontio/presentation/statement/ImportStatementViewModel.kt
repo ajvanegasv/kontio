@@ -3,6 +3,7 @@ package dev.ajvanegasv.kontio.presentation.statement
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.ajvanegasv.kontio.data.local.AiConfigStorage
+import dev.ajvanegasv.kontio.data.remote.gemini.GeminiApiClient
 import dev.ajvanegasv.kontio.di.AppContainer
 import dev.ajvanegasv.kontio.domain.model.Account
 import dev.ajvanegasv.kontio.domain.model.Category
@@ -30,6 +31,9 @@ data class ImportStatementUiState(
     val selectedFile: StatementFile? = null,
     val apiKey: String? = null,
     val isApiKeyConfigured: Boolean = false,
+    val model: String = "gemini-3.8-flash",
+    val availableModels: List<String> = listOf("gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"),
+    val isLoadingModels: Boolean = false,
     val accounts: List<Account> = emptyList(),
     val categories: List<Category> = emptyList(),
     val selectedAccountId: String? = null,
@@ -54,11 +58,22 @@ class ImportStatementViewModel(
     private fun loadInitialData() {
         viewModelScope.launch {
             val key = aiConfigStorage.getApiKey()
+            val currentModel = aiConfigStorage.getModel().removePrefix("models/").trim().ifBlank { "gemini-3.8-flash" }
             _uiState.update {
                 it.copy(
                     apiKey = key,
-                    isApiKeyConfigured = !key.isNullOrBlank()
+                    isApiKeyConfigured = !key.isNullOrBlank(),
+                    model = currentModel
                 )
+            }
+            if (!key.isNullOrBlank()) {
+                refreshAvailableModels(key)
+            }
+        }
+        viewModelScope.launch {
+            aiConfigStorage.modelFlow.collect { currentModel ->
+                val clean = currentModel.removePrefix("models/").trim()
+                _uiState.update { it.copy(model = clean) }
             }
         }
         viewModelScope.launch {
@@ -87,14 +102,59 @@ class ImportStatementViewModel(
         }
     }
 
-    fun saveApiKey(key: String) {
+    fun saveApiKey(key: String, model: String = _uiState.value.model) {
+        val cleanModel = model.removePrefix("models/").trim().ifBlank { "gemini-2.5-flash" }
         aiConfigStorage.setApiKey(key)
+        aiConfigStorage.setModel(cleanModel)
         _uiState.update {
             it.copy(
                 apiKey = key,
                 isApiKeyConfigured = key.isNotBlank(),
+                model = cleanModel,
                 errorMessage = null
             )
+        }
+        if (key.isNotBlank()) {
+            refreshAvailableModels(key)
+        }
+    }
+
+    fun setModel(model: String) {
+        val cleanModel = model.removePrefix("models/").trim().ifBlank { "gemini-2.5-flash" }
+        aiConfigStorage.setModel(cleanModel)
+        _uiState.update { it.copy(model = cleanModel) }
+    }
+
+    fun refreshAvailableModels(keyToUse: String? = null) {
+        val key = keyToUse ?: _uiState.value.apiKey ?: aiConfigStorage.getApiKey() ?: return
+        if (key.isBlank()) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingModels = true) }
+            val client = GeminiApiClient()
+            client.fetchAvailableModels(key)
+                .onSuccess { models ->
+                    val flashFirst = models.sortedWith(
+                        compareByDescending<String> { it.contains("flash", ignoreCase = true) }
+                            .thenByDescending { it.contains("2.5") || it.contains("3.") }
+                    ).take(6)
+
+                    _uiState.update { current ->
+                        val currentValid = flashFirst.contains(current.model)
+                        val newSelected = if (currentValid) current.model else flashFirst.firstOrNull() ?: current.model
+                        if (!currentValid && flashFirst.isNotEmpty()) {
+                            aiConfigStorage.setModel(newSelected)
+                        }
+                        current.copy(
+                            availableModels = if (flashFirst.isNotEmpty()) flashFirst else current.availableModels,
+                            model = newSelected,
+                            isLoadingModels = false
+                        )
+                    }
+                }
+                .onFailure {
+                    _uiState.update { it.copy(isLoadingModels = false) }
+                }
         }
     }
 
@@ -108,7 +168,7 @@ class ImportStatementViewModel(
             _uiState.update {
                 it.copy(
                     stage = ImportStage.ANALYZING,
-                    analysisMessage = if (file.isPdf) "Extrayendo movimientos del PDF con Gemini..." else "Analizando registros CSV con Gemini...",
+                    analysisMessage = if (file.isPdf) "Extrayendo movimientos del PDF con Gemini (${_uiState.value.model})...\nEsto puede tomar entre 15 y 35 segundos." else "Analizando registros CSV con Gemini...",
                     errorMessage = null
                 )
             }

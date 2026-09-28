@@ -7,6 +7,10 @@ interface AiConfigStorage {
     fun getApiKey(): String?
     fun setApiKey(apiKey: String)
     fun clearApiKey()
+
+    val modelFlow: Flow<String>
+    fun getModel(): String
+    fun setModel(model: String)
 }
 
 expect fun getAiConfigStorage(): AiConfigStorage
