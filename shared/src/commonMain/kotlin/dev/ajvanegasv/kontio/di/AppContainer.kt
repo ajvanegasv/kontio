@@ -165,11 +165,34 @@ object AppContainer {
         )
     }
 
+    val kontioToolRegistry: dev.ajvanegasv.kontio.domain.agent.tools.KontioToolRegistry by lazy {
+        dev.ajvanegasv.kontio.domain.agent.tools.KontioToolRegistry(
+            tools = listOf(
+                dev.ajvanegasv.kontio.domain.agent.tools.GetAccountsSummaryTool(accountRepository = accountRepository),
+                dev.ajvanegasv.kontio.domain.agent.tools.GetAccountDetailTool(accountRepository = accountRepository, transactionRepository = transactionRepository),
+                dev.ajvanegasv.kontio.domain.agent.tools.GetCategoriesTool(categoryRepository = categoryRepository),
+                dev.ajvanegasv.kontio.domain.agent.tools.GetCategorySpendingTool(categoryRepository = categoryRepository, transactionRepository = transactionRepository),
+                dev.ajvanegasv.kontio.domain.agent.tools.SearchTransactionsTool(financialToolExecutor = financialToolExecutor),
+                dev.ajvanegasv.kontio.domain.agent.tools.GetRecentTransactionsTool(transactionRepository = transactionRepository),
+                dev.ajvanegasv.kontio.domain.agent.tools.GetFinancialOverviewTool(transactionRepository = transactionRepository)
+            )
+        )
+    }
+
+    val kontioAgentUseCase: dev.ajvanegasv.kontio.domain.agent.service.KontioAgentUseCase by lazy {
+        dev.ajvanegasv.kontio.domain.agent.service.KontioAgentUseCase(
+            toolRegistry = kontioToolRegistry,
+            aiConfigStorage = aiConfigStorage,
+            geminiApiClient = geminiApiClient
+        )
+    }
+
     val aiFinancialAdvisorUseCase: dev.ajvanegasv.kontio.domain.usecase.AiFinancialAdvisorUseCase by lazy {
         dev.ajvanegasv.kontio.domain.usecase.AiFinancialAdvisorUseCase(
             toolExecutor = financialToolExecutor,
             aiConfigStorage = aiConfigStorage,
-            geminiApiClient = geminiApiClient
+            geminiApiClient = geminiApiClient,
+            agentUseCase = kontioAgentUseCase
         )
     }
 

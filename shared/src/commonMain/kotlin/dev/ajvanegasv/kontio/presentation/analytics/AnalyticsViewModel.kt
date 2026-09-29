@@ -19,6 +19,9 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+import dev.ajvanegasv.kontio.domain.agent.model.AgentResponse
+import dev.ajvanegasv.kontio.domain.agent.service.KontioAgentUseCase
+
 data class AnalyticsUiState(
     val summary: AnalyticsSummary = AnalyticsSummary(
         totalIncome = 0.0,
@@ -32,6 +35,7 @@ data class AnalyticsUiState(
     val selectedCategoryId: String? = null,
     val queryText: String = "",
     val aiReport: AiVisualReport? = null,
+    val agentResponse: AgentResponse? = null,
     val isAiLoading: Boolean = false,
     val isLoadingSummary: Boolean = true,
     val errorMessage: String? = null
@@ -40,6 +44,7 @@ data class AnalyticsUiState(
 class AnalyticsViewModel(
     private val getAnalyticsSummaryUseCase: GetAnalyticsSummaryUseCase = AppContainer.getAnalyticsSummaryUseCase,
     private val aiFinancialAdvisorUseCase: AiFinancialAdvisorUseCase = AppContainer.aiFinancialAdvisorUseCase,
+    private val agentUseCase: KontioAgentUseCase? = null,
     coroutineScope: CoroutineScope? = null,
     sharingStarted: SharingStarted = SharingStarted.WhileSubscribed(5000)
 ) : ViewModel() {
@@ -50,6 +55,7 @@ class AnalyticsViewModel(
     private val _selectedCategoryId = MutableStateFlow<String?>(null)
     private val _queryText = MutableStateFlow("")
     private val _aiReport = MutableStateFlow<AiVisualReport?>(null)
+    private val _agentResponse = MutableStateFlow<AgentResponse?>(null)
     private val _isAiLoading = MutableStateFlow(false)
     private val _errorMessage = MutableStateFlow<String?>(null)
 
@@ -59,18 +65,21 @@ class AnalyticsViewModel(
         _selectedCategoryId,
         _queryText,
         _aiReport,
-        _isAiLoading
-    ) { summary, selectedCatId, query, aiReport, isAiLoading ->
+        _agentResponse
+    ) { summary, selectedCatId, query, aiReport, agentResp ->
         AnalyticsUiState(
             summary = summary,
             selectedTimeframe = summary.timeframe,
             selectedCategoryId = selectedCatId,
             queryText = query,
             aiReport = aiReport,
-            isAiLoading = isAiLoading,
+            agentResponse = agentResp,
+            isAiLoading = false,
             isLoadingSummary = false,
             errorMessage = _errorMessage.value
         )
+    }.combine(_isAiLoading) { state, isAiLoading ->
+        state.copy(isAiLoading = isAiLoading)
     }.stateIn(
         scope = scope,
         started = sharingStarted,
@@ -100,6 +109,9 @@ class AnalyticsViewModel(
 
         scope.launch {
             try {
+                val resolvedAgent = agentUseCase ?: runCatching { AppContainer.kontioAgentUseCase }.getOrNull()
+                val agentResp = resolvedAgent?.executeQuery(trimmed)
+                _agentResponse.value = agentResp
                 val report = aiFinancialAdvisorUseCase(trimmed)
                 _aiReport.value = report
             } catch (e: Exception) {
@@ -112,5 +124,6 @@ class AnalyticsViewModel(
 
     fun dismissAiReport() {
         _aiReport.value = null
+        _agentResponse.value = null
     }
 }

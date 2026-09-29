@@ -15,6 +15,10 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
+import dev.ajvanegasv.kontio.domain.agent.model.AgentVisualPayload
+import dev.ajvanegasv.kontio.domain.agent.service.KontioAgentUseCase
+import dev.ajvanegasv.kontio.domain.model.ChartBarItem
+
 /**
  * Caso de uso que orquesta el análisis financiero asistido por IA, la comprensión contextual
  * de lenguaje natural y la ejecución de tools (con soporte para Gemini Function Calling y Parser Semántico local).
@@ -22,7 +26,8 @@ import kotlinx.serialization.json.jsonPrimitive
 class AiFinancialAdvisorUseCase(
     private val toolExecutor: FinancialToolExecutor,
     private val aiConfigStorage: AiConfigStorage,
-    private val geminiApiClient: GeminiApiClient = GeminiApiClient()
+    private val geminiApiClient: GeminiApiClient = GeminiApiClient(),
+    private val agentUseCase: KontioAgentUseCase? = null
 ) {
 
     private val searchTool = GeminiTool(
@@ -58,6 +63,93 @@ class AiFinancialAdvisorUseCase(
                 aiAdvice = "Por favor escribe una consulta o selecciona una sugerencia como 'Uber' o 'Comida'.",
                 isAiGenerated = false
             )
+        }
+
+        // Si el mini agente modular está disponible, delegamos en él
+        if (agentUseCase != null) {
+            val agentResponse = agentUseCase.executeQuery(cleanQuery)
+            return when (val payload = agentResponse.visualPayload) {
+                is AgentVisualPayload.TransactionListPayload -> {
+                    AiVisualReport(
+                        query = payload.query,
+                        title = payload.title,
+                        totalAmount = payload.totalAmountRaw,
+                        transactionCount = payload.count,
+                        averageAmount = if (payload.count > 0) payload.totalAmountRaw / payload.count else 0.0,
+                        currency = payload.currency,
+                        chartBars = payload.chartBars,
+                        matchingTransactions = payload.transactions,
+                        aiAdvice = agentResponse.text,
+                        isAiGenerated = agentResponse.isAiGenerated
+                    )
+                }
+                is AgentVisualPayload.AccountsSummaryPayload -> {
+                    val firstCurrency = payload.accounts.firstOrNull()?.currency ?: "USD"
+                    val sumBalance = payload.accounts.sumOf { it.balanceRaw }
+                    AiVisualReport(
+                        query = "cuentas",
+                        title = "Cuentas y Saldos",
+                        totalAmount = sumBalance,
+                        transactionCount = payload.accounts.size,
+                        averageAmount = if (payload.accounts.isNotEmpty()) sumBalance / payload.accounts.size else 0.0,
+                        currency = firstCurrency,
+                        chartBars = emptyList(),
+                        matchingTransactions = emptyList(),
+                        aiAdvice = agentResponse.text,
+                        isAiGenerated = agentResponse.isAiGenerated
+                    )
+                }
+                is AgentVisualPayload.CategoryBreakdownPayload -> {
+                    val maxAmount = payload.categories.maxOfOrNull { it.amountRaw } ?: 1.0
+                    val bars = payload.categories.map { item ->
+                        ChartBarItem(
+                            label = item.name,
+                            amount = item.amountRaw,
+                            heightRatio = if (maxAmount > 0) (item.amountRaw / maxAmount).toFloat().coerceIn(0.12f, 1f) else 0.5f
+                        )
+                    }
+                    AiVisualReport(
+                        query = "categorías",
+                        title = "Desglose por Categorías (${payload.timeframeLabel})",
+                        totalAmount = payload.totalAmountRaw,
+                        transactionCount = payload.categories.sumOf { it.transactionCount },
+                        averageAmount = if (payload.categories.isNotEmpty()) payload.totalAmountRaw / payload.categories.size else 0.0,
+                        currency = payload.currency,
+                        chartBars = bars,
+                        matchingTransactions = emptyList(),
+                        aiAdvice = agentResponse.text,
+                        isAiGenerated = agentResponse.isAiGenerated
+                    )
+                }
+                is AgentVisualPayload.FinancialOverviewPayload -> {
+                    AiVisualReport(
+                        query = "balance",
+                        title = "Resumen Financiero (${payload.periodLabel})",
+                        totalAmount = 0.0,
+                        transactionCount = 0,
+                        averageAmount = 0.0,
+                        currency = payload.currency,
+                        chartBars = emptyList(),
+                        matchingTransactions = emptyList(),
+                        aiAdvice = agentResponse.text,
+                        isAiGenerated = agentResponse.isAiGenerated
+                    )
+                }
+                null -> {
+                    AiVisualReport(
+                        query = cleanQuery,
+                        title = "Kontio AI",
+                        totalAmount = 0.0,
+                        transactionCount = 0,
+                        averageAmount = 0.0,
+                        currency = "USD",
+                        chartBars = emptyList(),
+                        matchingTransactions = emptyList(),
+                        aiAdvice = agentResponse.text,
+                        isAiGenerated = agentResponse.isAiGenerated
+                    )
+                }
+            }
         }
 
         // 1. Análisis semántico preliminar local (determina entidad y periodos)

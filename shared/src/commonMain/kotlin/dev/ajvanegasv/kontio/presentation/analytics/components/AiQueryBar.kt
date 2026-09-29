@@ -52,11 +52,12 @@ fun AiQueryBar(
     val focusManager = LocalFocusManager.current
 
     val suggestionChips = listOf(
-        "🚗 Uber" to "Uber",
-        "🍔 Alimentación" to "Alimentación",
-        "☕ Café" to "Café",
-        "🛒 Supermercado" to "Supermercado",
-        "💡 Consejos de ahorro" to "Consejos de ahorro"
+        "🏦 Mis Bancos y Saldos" to "¿Cuáles son mis cuentas y cuánto dinero tengo?",
+        "📊 Gastos por Categoría" to "¿En qué categorías gasto más este mes?",
+        "💳 Tarjetas de Crédito" to "¿Cuál es el saldo y cupo de mis tarjetas?",
+        "🚗 Gastos en Uber" to "¿Cuánto he gastado en Uber este año?",
+        "🕒 Últimos Movimientos" to "¿Cuáles fueron mis últimas transacciones?",
+        "💡 Balance del Mes" to "¿Cómo van mis finanzas este mes?"
     )
 
     Column(
@@ -87,7 +88,7 @@ fun AiQueryBar(
                     modifier = Modifier.weight(1f),
                     placeholder = {
                         Text(
-                            text = "Ej. ¿Cuánto he gastado en Uber?",
+                            text = "Ej. ¿Cuánto tengo en el banco?, gastos en Uber...",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         )
