@@ -5,9 +5,11 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 import dev.ajvanegasv.kontio.data.local.dao.AccountDao
+import dev.ajvanegasv.kontio.data.local.dao.BudgetDao
 import dev.ajvanegasv.kontio.data.local.dao.CategoryDao
 import dev.ajvanegasv.kontio.data.local.dao.TransactionDao
 import dev.ajvanegasv.kontio.data.local.entity.AccountEntity
+import dev.ajvanegasv.kontio.data.local.entity.BudgetEntity
 import dev.ajvanegasv.kontio.data.local.entity.CategoryEntity
 import dev.ajvanegasv.kontio.data.local.entity.TransactionEntity
 
@@ -15,9 +17,10 @@ import dev.ajvanegasv.kontio.data.local.entity.TransactionEntity
     entities = [
         AccountEntity::class,
         CategoryEntity::class,
-        TransactionEntity::class
+        TransactionEntity::class,
+        BudgetEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @ConstructedBy(KontioDatabaseConstructor::class)
@@ -25,6 +28,7 @@ abstract class KontioDatabase : RoomDatabase() {
     abstract fun accountDao(): AccountDao
     abstract fun categoryDao(): CategoryDao
     abstract fun transactionDao(): TransactionDao
+    abstract fun budgetDao(): BudgetDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

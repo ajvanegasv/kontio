@@ -19,6 +19,7 @@ data class Transaction(
     val timestamp: Long,
     val note: String = "",
     val targetAccountId: String? = null,
+    val budgetId: String? = null,
     val aiMetadata: AiMetadata? = null,
     val category: Category? = null,
     val account: Account? = null

@@ -49,12 +49,14 @@ import dev.ajvanegasv.kontio.presentation.more.components.AiSettingsDialog
 @Composable
 fun MoreScreen(
     onNavigateToCategories: () -> Unit,
+    onNavigateToBudgets: () -> Unit = {},
     backupViewModel: BackupViewModel,
     modifier: Modifier = Modifier,
     onImportStatementClick: () -> Unit = {}
 ) {
     val backupState by backupViewModel.uiState.collectAsState()
     val categories by AppContainer.categoryRepository.getCategories().collectAsState(initial = emptyList())
+    val budgets by AppContainer.budgetRepository.getBudgets().collectAsState(initial = emptyList())
     val apiKey by AppContainer.aiConfigStorage.apiKeyFlow.collectAsState(initial = AppContainer.aiConfigStorage.getApiKey())
     val isAiEnabled by AppContainer.aiConfigStorage.isAiEnabledFlow.collectAsState(initial = AppContainer.aiConfigStorage.isAiEnabled())
     val aiModel by AppContainer.aiConfigStorage.modelFlow.collectAsState(initial = AppContainer.aiConfigStorage.getModel())
@@ -295,6 +297,90 @@ fun MoreScreen(
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            Icon(
+                                imageVector = DashboardIcons.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Tarjeta de Presupuestos
+                KontioGlassCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onNavigateToBudgets),
+                    shape = RoundedCornerShape(20.dp),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = DashboardIcons.AccountBalanceWallet,
+                                    contentDescription = "Presupuestos",
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(14.dp))
+
+                            Column {
+                                Text(
+                                    text = "Presupuestos",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Fija límites por categoría y controla tus gastos planeados",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    lineHeight = 16.sp
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceContainer.copy(
+                                            alpha = if (isDark) 0.40f else 0.70f
+                                        )
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "${budgets.size}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.secondary
                                 )
                             }
 

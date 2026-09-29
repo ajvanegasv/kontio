@@ -129,8 +129,26 @@ class AnalyticsViewModel(
                 val resolvedAgent = agentUseCase ?: runCatching { AppContainer.kontioAgentUseCase }.getOrNull()
                 val agentResp = resolvedAgent?.executeQuery(trimmed)
                 _agentResponse.value = agentResp
-                val report = aiFinancialAdvisorUseCase(trimmed)
-                _aiReport.value = report
+                val baseReport = aiFinancialAdvisorUseCase(trimmed)
+                val finalReport = if (agentResp != null && agentResp.visualPayload != null) {
+                    baseReport.copy(
+                        visualPayload = agentResp.visualPayload,
+                        toolsUsed = agentResp.toolsUsed,
+                        speechText = agentResp.speechText,
+                        aiAdvice = agentResp.text.ifBlank { baseReport.aiAdvice },
+                        isAiGenerated = agentResp.isAiGenerated
+                    )
+                } else if (agentResp != null) {
+                    baseReport.copy(
+                        toolsUsed = agentResp.toolsUsed,
+                        speechText = agentResp.speechText,
+                        aiAdvice = agentResp.text.ifBlank { baseReport.aiAdvice },
+                        isAiGenerated = agentResp.isAiGenerated
+                    )
+                } else {
+                    baseReport
+                }
+                _aiReport.value = finalReport
             } catch (e: Exception) {
                 _errorMessage.value = "Error al analizar con IA: ${e.message}"
             } finally {

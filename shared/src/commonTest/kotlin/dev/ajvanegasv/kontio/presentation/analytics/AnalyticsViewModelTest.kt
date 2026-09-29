@@ -18,10 +18,22 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
+import dev.ajvanegasv.kontio.domain.agent.model.AgentVisualPayload
+import dev.ajvanegasv.kontio.domain.agent.service.KontioAgentUseCase
+import dev.ajvanegasv.kontio.domain.agent.tools.GetAccountsSummaryTool
+import dev.ajvanegasv.kontio.domain.agent.tools.GetCategorySpendingTool
+import dev.ajvanegasv.kontio.domain.agent.tools.GetFinancialOverviewTool
+import dev.ajvanegasv.kontio.domain.agent.tools.GetRecentTransactionsTool
+import dev.ajvanegasv.kontio.domain.agent.tools.KontioToolRegistry
+import dev.ajvanegasv.kontio.domain.agent.tools.SearchTransactionsTool
+import dev.ajvanegasv.kontio.domain.model.Account
+import dev.ajvanegasv.kontio.domain.model.AccountType
+import dev.ajvanegasv.kontio.domain.usecase.FakeAccountRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class FakeTestAiConfigStorage : AiConfigStorage {
     private val apiKey = MutableStateFlow<String?>(null)
@@ -184,5 +196,126 @@ class AnalyticsViewModelTest {
         // Refrescar sugerencias
         viewModel.loadSuggestions(forceRefresh = true)
         kotlin.test.assertFalse(viewModel.uiState.value.suggestions.isEmpty())
+    }
+
+    @Test
+    fun testExecuteAiQuery_withAgent_generatesAccountsSummaryVisualPayload() = runBlocking {
+        val catRepo = FakeAnalyticsCategoryRepository()
+        val txRepo = FakeAnalyticsTransactionRepository()
+        val accRepo = FakeAccountRepository()
+        accRepo.insertAccount(
+            Account(id = "acc_bancolombia", name = "Bancolombia Ahorros", type = AccountType.SAVINGS, balance = 1500.0, currency = "USD")
+        )
+        val getSummaryUseCase = GetAnalyticsSummaryUseCase(txRepo, catRepo)
+        val toolExecutor = FinancialToolExecutor(txRepo, catRepo)
+        val aiStorage = FakeTestAiConfigStorage()
+        val registry = KontioToolRegistry(
+            listOf(
+                GetAccountsSummaryTool(accRepo),
+                GetCategorySpendingTool(catRepo, txRepo),
+                GetFinancialOverviewTool(txRepo),
+                SearchTransactionsTool(toolExecutor)
+            )
+        )
+        val agentUseCase = KontioAgentUseCase(registry, aiStorage)
+        val aiUseCase = AiFinancialAdvisorUseCase(toolExecutor, aiStorage, agentUseCase = agentUseCase)
+
+        val viewModel = AnalyticsViewModel(
+            getAnalyticsSummaryUseCase = getSummaryUseCase,
+            aiFinancialAdvisorUseCase = aiUseCase,
+            agentUseCase = agentUseCase,
+            coroutineScope = CoroutineScope(Dispatchers.Unconfined),
+            sharingStarted = kotlinx.coroutines.flow.SharingStarted.Eagerly
+        )
+
+        viewModel.executeAiQuery("¿cuánto dinero tengo en mis cuentas?")
+
+        val report = viewModel.uiState.value.aiReport
+        assertNotNull(report)
+        val payload = report.visualPayload as? AgentVisualPayload.AccountsSummaryPayload
+        assertNotNull(payload)
+        assertEquals(1, payload.accounts.size)
+        assertEquals("Bancolombia Ahorros", payload.accounts.first().name)
+        assertTrue(report.toolsUsed.contains("get_accounts_summary"))
+
+        viewModel.dismissAiReport()
+        assertNull(viewModel.uiState.value.aiReport)
+        assertNull(viewModel.uiState.value.agentResponse)
+    }
+
+    @Test
+    fun testExecuteAiQuery_withAgent_generatesCategoryBreakdownVisualPayload() = runBlocking {
+        val now = Clock.System.now().toEpochMilliseconds()
+        val cat = Category(id = "cat_rest", name = "Restaurantes", iconName = "restaurant", colorHex = "#FF5722", type = TransactionType.EXPENSE)
+        val tx = Transaction(id = "tx1", accountId = "acc1", categoryId = "cat_rest", type = TransactionType.EXPENSE, amount = 65.0, timestamp = now, note = "Cena familiar", category = cat)
+
+        val catRepo = FakeAnalyticsCategoryRepository(listOf(cat))
+        val txRepo = FakeAnalyticsTransactionRepository(listOf(tx))
+        val getSummaryUseCase = GetAnalyticsSummaryUseCase(txRepo, catRepo)
+        val toolExecutor = FinancialToolExecutor(txRepo, catRepo)
+        val aiStorage = FakeTestAiConfigStorage()
+        val registry = KontioToolRegistry(
+            listOf(
+                GetCategorySpendingTool(catRepo, txRepo)
+            )
+        )
+        val agentUseCase = KontioAgentUseCase(registry, aiStorage)
+        val aiUseCase = AiFinancialAdvisorUseCase(toolExecutor, aiStorage, agentUseCase = agentUseCase)
+
+        val viewModel = AnalyticsViewModel(
+            getAnalyticsSummaryUseCase = getSummaryUseCase,
+            aiFinancialAdvisorUseCase = aiUseCase,
+            agentUseCase = agentUseCase,
+            coroutineScope = CoroutineScope(Dispatchers.Unconfined),
+            sharingStarted = kotlinx.coroutines.flow.SharingStarted.Eagerly
+        )
+
+        viewModel.executeAiQuery("¿en qué categorías gasto más este mes?")
+
+        val report = viewModel.uiState.value.aiReport
+        assertNotNull(report)
+        val payload = report.visualPayload as? AgentVisualPayload.CategoryBreakdownPayload
+        assertNotNull(payload)
+        assertEquals(1, payload.categories.size)
+        assertEquals("Restaurantes", payload.categories.first().name)
+        assertEquals(65.0, payload.totalAmountRaw)
+        assertTrue(report.toolsUsed.contains("get_category_spending"))
+    }
+
+    @Test
+    fun testExecuteAiQuery_withAgent_generatesFinancialOverviewVisualPayload() = runBlocking {
+        val now = Clock.System.now().toEpochMilliseconds()
+        val incomeTx = Transaction(id = "t_inc", accountId = "acc1", categoryId = "cat_sal", type = TransactionType.INCOME, amount = 2000.0, timestamp = now, note = "Salario")
+        val expenseTx = Transaction(id = "t_exp", accountId = "acc1", categoryId = "cat_rent", type = TransactionType.EXPENSE, amount = 800.0, timestamp = now, note = "Renta")
+
+        val catRepo = FakeAnalyticsCategoryRepository()
+        val txRepo = FakeAnalyticsTransactionRepository(listOf(incomeTx, expenseTx))
+        val getSummaryUseCase = GetAnalyticsSummaryUseCase(txRepo, catRepo)
+        val toolExecutor = FinancialToolExecutor(txRepo, catRepo)
+        val aiStorage = FakeTestAiConfigStorage()
+        val registry = KontioToolRegistry(
+            listOf(
+                GetFinancialOverviewTool(txRepo)
+            )
+        )
+        val agentUseCase = KontioAgentUseCase(registry, aiStorage)
+        val aiUseCase = AiFinancialAdvisorUseCase(toolExecutor, aiStorage, agentUseCase = agentUseCase)
+
+        val viewModel = AnalyticsViewModel(
+            getAnalyticsSummaryUseCase = getSummaryUseCase,
+            aiFinancialAdvisorUseCase = aiUseCase,
+            agentUseCase = agentUseCase,
+            coroutineScope = CoroutineScope(Dispatchers.Unconfined),
+            sharingStarted = kotlinx.coroutines.flow.SharingStarted.Eagerly
+        )
+
+        viewModel.executeAiQuery("balance general")
+
+        val report = viewModel.uiState.value.aiReport
+        assertNotNull(report)
+        val payload = report.visualPayload as? AgentVisualPayload.FinancialOverviewPayload
+        assertNotNull(payload)
+        assertTrue(report.toolsUsed.contains("get_financial_overview"))
+        assertEquals(60.0f, payload.savingsRate)
     }
 }

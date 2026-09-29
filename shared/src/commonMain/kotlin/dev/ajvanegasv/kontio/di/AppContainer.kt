@@ -5,22 +5,28 @@ import dev.ajvanegasv.kontio.data.local.KontioDatabase
 import dev.ajvanegasv.kontio.data.local.createRoomDatabase
 import dev.ajvanegasv.kontio.data.repository.AccountRepositoryImpl
 import dev.ajvanegasv.kontio.data.repository.BackupRepositoryImpl
+import dev.ajvanegasv.kontio.data.repository.BudgetRepositoryImpl
 import dev.ajvanegasv.kontio.data.repository.CategoryRepositoryImpl
 import dev.ajvanegasv.kontio.data.repository.TransactionRepositoryImpl
 import dev.ajvanegasv.kontio.domain.model.Account
 import dev.ajvanegasv.kontio.domain.model.AccountType
 import dev.ajvanegasv.kontio.domain.repository.AccountRepository
 import dev.ajvanegasv.kontio.domain.repository.BackupRepository
+import dev.ajvanegasv.kontio.domain.repository.BudgetRepository
 import dev.ajvanegasv.kontio.domain.repository.CategoryRepository
 import dev.ajvanegasv.kontio.domain.repository.TransactionRepository
 import dev.ajvanegasv.kontio.domain.usecase.CreateAccountUseCase
+import dev.ajvanegasv.kontio.domain.usecase.CreateBudgetUseCase
 import dev.ajvanegasv.kontio.domain.usecase.CreateCategoryUseCase
 import dev.ajvanegasv.kontio.domain.usecase.CreateTransactionUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteAccountUseCase
+import dev.ajvanegasv.kontio.domain.usecase.DeleteBudgetUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteCategoryUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteTransactionUseCase
+import dev.ajvanegasv.kontio.domain.usecase.GetBudgetsWithProgressUseCase
 import dev.ajvanegasv.kontio.domain.usecase.GetDashboardSummaryUseCase
 import dev.ajvanegasv.kontio.domain.usecase.ReassignTransactionsAccountUseCase
+import dev.ajvanegasv.kontio.domain.usecase.UpdateBudgetUseCase
 import dev.ajvanegasv.kontio.domain.usecase.UpdateTransactionUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,13 +54,44 @@ object AppContainer {
         )
     }
 
+    val budgetRepository: BudgetRepository by lazy {
+        BudgetRepositoryImpl(
+            budgetDao = database.budgetDao(),
+            categoryDao = database.categoryDao(),
+            transactionDao = database.transactionDao()
+        )
+    }
+
     val backupRepository: BackupRepository by lazy {
         BackupRepositoryImpl(
             accountDao = database.accountDao(),
             categoryDao = database.categoryDao(),
             transactionDao = database.transactionDao(),
-            driveManager = GoogleDriveBackupManager()
+            driveManager = GoogleDriveBackupManager(),
+            budgetDao = database.budgetDao()
         )
+    }
+
+    val getBudgetsWithProgressUseCase: GetBudgetsWithProgressUseCase by lazy {
+        GetBudgetsWithProgressUseCase(budgetRepository = budgetRepository)
+    }
+
+    val createBudgetUseCase: CreateBudgetUseCase by lazy {
+        CreateBudgetUseCase(
+            budgetRepository = budgetRepository,
+            categoryRepository = categoryRepository
+        )
+    }
+
+    val updateBudgetUseCase: UpdateBudgetUseCase by lazy {
+        UpdateBudgetUseCase(
+            budgetRepository = budgetRepository,
+            categoryRepository = categoryRepository
+        )
+    }
+
+    val deleteBudgetUseCase: DeleteBudgetUseCase by lazy {
+        DeleteBudgetUseCase(budgetRepository = budgetRepository)
     }
 
     val createTransactionUseCase: CreateTransactionUseCase by lazy {

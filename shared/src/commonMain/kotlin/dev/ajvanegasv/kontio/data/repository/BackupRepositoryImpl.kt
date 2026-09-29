@@ -3,6 +3,7 @@ package dev.ajvanegasv.kontio.data.repository
 import dev.ajvanegasv.kontio.data.backup.GoogleDriveBackupManager
 import dev.ajvanegasv.kontio.data.backup.KontioBackupPayload
 import dev.ajvanegasv.kontio.data.local.dao.AccountDao
+import dev.ajvanegasv.kontio.data.local.dao.BudgetDao
 import dev.ajvanegasv.kontio.data.local.dao.CategoryDao
 import dev.ajvanegasv.kontio.data.local.dao.TransactionDao
 import dev.ajvanegasv.kontio.domain.model.BackupMetadata
@@ -15,7 +16,8 @@ class BackupRepositoryImpl(
     private val accountDao: AccountDao,
     private val categoryDao: CategoryDao,
     private val transactionDao: TransactionDao,
-    private val driveManager: GoogleDriveBackupManager
+    private val driveManager: GoogleDriveBackupManager,
+    private val budgetDao: BudgetDao? = null
 ) : BackupRepository {
 
     private val _latestLocalMetadata = MutableStateFlow<BackupMetadata?>(null)
@@ -36,6 +38,7 @@ class BackupRepositoryImpl(
             val accounts = accountDao.getAllAccountsDirect()
             val categories = categoryDao.getAllCategoriesDirect()
             val transactions = transactionDao.getAllTransactionsDirect()
+            val budgets = budgetDao?.getAllBudgetsDirect() ?: emptyList()
 
             val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             val dummyMetadata = BackupMetadata(
@@ -51,7 +54,8 @@ class BackupRepositoryImpl(
                 metadata = dummyMetadata,
                 accounts = accounts,
                 categories = categories,
-                transactions = transactions
+                transactions = transactions,
+                budgets = budgets
             )
             val bytes = payload.toBytes()
             val finalMetadata = dummyMetadata.copy(sizeBytes = bytes.size.toLong())
@@ -68,10 +72,14 @@ class BackupRepositoryImpl(
             transactionDao.deleteAllTransactions()
             accountDao.deleteAllAccounts()
             categoryDao.deleteAllCategories()
+            budgetDao?.deleteAllBudgets()
 
             categoryDao.insertCategories(payload.categories)
             accountDao.insertAccounts(payload.accounts)
             transactionDao.insertTransactions(payload.transactions)
+            if (payload.budgets.isNotEmpty()) {
+                budgetDao?.insertBudgets(payload.budgets)
+            }
 
             _latestLocalMetadata.value = payload.metadata
         }
@@ -82,6 +90,7 @@ class BackupRepositoryImpl(
             val accounts = accountDao.getAllAccountsDirect()
             val categories = categoryDao.getAllCategoriesDirect()
             val transactions = transactionDao.getAllTransactionsDirect()
+            val budgets = budgetDao?.getAllBudgetsDirect() ?: emptyList()
 
             val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             val initialMetadata = BackupMetadata(
@@ -97,7 +106,8 @@ class BackupRepositoryImpl(
                 metadata = initialMetadata,
                 accounts = accounts,
                 categories = categories,
-                transactions = transactions
+                transactions = transactions,
+                budgets = budgets
             )
             val bytes = payload.toBytes()
             val finalMetadata = initialMetadata.copy(sizeBytes = bytes.size.toLong())

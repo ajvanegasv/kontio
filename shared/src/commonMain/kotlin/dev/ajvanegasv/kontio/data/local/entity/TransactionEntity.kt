@@ -15,7 +15,8 @@ import kotlinx.serialization.json.Json
     indices = [
         Index("accountId"),
         Index("categoryId"),
-        Index("timestamp")
+        Index("timestamp"),
+        Index("budgetId")
     ]
 )
 data class TransactionEntity(
@@ -29,6 +30,7 @@ data class TransactionEntity(
     val timestamp: Long,
     val note: String,
     val targetAccountId: String?,
+    val budgetId: String? = null,
     val aiMetadataJson: String?
 ) {
     fun toDomain(): Transaction = Transaction(
@@ -41,6 +43,7 @@ data class TransactionEntity(
         timestamp = timestamp,
         note = note,
         targetAccountId = targetAccountId,
+        budgetId = budgetId,
         aiMetadata = aiMetadataJson?.let {
             try { Json.decodeFromString<AiMetadata>(it) } catch (e: Exception) { null }
         }
@@ -57,6 +60,7 @@ data class TransactionEntity(
             timestamp = tx.timestamp,
             note = tx.note,
             targetAccountId = tx.targetAccountId,
+            budgetId = tx.budgetId,
             aiMetadataJson = tx.aiMetadata?.let {
                 try { Json.encodeToString(it) } catch (e: Exception) { null }
             }

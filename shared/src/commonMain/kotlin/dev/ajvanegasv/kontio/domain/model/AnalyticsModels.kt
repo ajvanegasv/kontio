@@ -1,5 +1,6 @@
 package dev.ajvanegasv.kontio.domain.model
 
+import dev.ajvanegasv.kontio.domain.agent.model.AgentVisualPayload
 import kotlinx.serialization.Serializable
 
 /**
@@ -65,5 +66,8 @@ data class AiVisualReport(
     val chartBars: List<ChartBarItem> = emptyList(),
     val matchingTransactions: List<Transaction> = emptyList(),
     val aiAdvice: String,
-    val isAiGenerated: Boolean = true
+    val isAiGenerated: Boolean = true,
+    val visualPayload: AgentVisualPayload? = null,
+    val toolsUsed: List<String> = emptyList(),
+    val speechText: String? = null
 )

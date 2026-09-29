@@ -80,7 +80,10 @@ class AiFinancialAdvisorUseCase(
                         chartBars = payload.chartBars,
                         matchingTransactions = payload.transactions,
                         aiAdvice = agentResponse.text,
-                        isAiGenerated = agentResponse.isAiGenerated
+                        isAiGenerated = agentResponse.isAiGenerated,
+                        visualPayload = payload,
+                        toolsUsed = agentResponse.toolsUsed,
+                        speechText = agentResponse.speechText
                     )
                 }
                 is AgentVisualPayload.AccountsSummaryPayload -> {
@@ -96,7 +99,10 @@ class AiFinancialAdvisorUseCase(
                         chartBars = emptyList(),
                         matchingTransactions = emptyList(),
                         aiAdvice = agentResponse.text,
-                        isAiGenerated = agentResponse.isAiGenerated
+                        isAiGenerated = agentResponse.isAiGenerated,
+                        visualPayload = payload,
+                        toolsUsed = agentResponse.toolsUsed,
+                        speechText = agentResponse.speechText
                     )
                 }
                 is AgentVisualPayload.CategoryBreakdownPayload -> {
@@ -118,7 +124,10 @@ class AiFinancialAdvisorUseCase(
                         chartBars = bars,
                         matchingTransactions = emptyList(),
                         aiAdvice = agentResponse.text,
-                        isAiGenerated = agentResponse.isAiGenerated
+                        isAiGenerated = agentResponse.isAiGenerated,
+                        visualPayload = payload,
+                        toolsUsed = agentResponse.toolsUsed,
+                        speechText = agentResponse.speechText
                     )
                 }
                 is AgentVisualPayload.FinancialOverviewPayload -> {
@@ -132,7 +141,10 @@ class AiFinancialAdvisorUseCase(
                         chartBars = emptyList(),
                         matchingTransactions = emptyList(),
                         aiAdvice = agentResponse.text,
-                        isAiGenerated = agentResponse.isAiGenerated
+                        isAiGenerated = agentResponse.isAiGenerated,
+                        visualPayload = payload,
+                        toolsUsed = agentResponse.toolsUsed,
+                        speechText = agentResponse.speechText
                     )
                 }
                 null -> {
@@ -146,7 +158,10 @@ class AiFinancialAdvisorUseCase(
                         chartBars = emptyList(),
                         matchingTransactions = emptyList(),
                         aiAdvice = agentResponse.text,
-                        isAiGenerated = agentResponse.isAiGenerated
+                        isAiGenerated = agentResponse.isAiGenerated,
+                        visualPayload = null,
+                        toolsUsed = agentResponse.toolsUsed,
+                        speechText = agentResponse.speechText
                     )
                 }
             }

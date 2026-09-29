@@ -32,19 +32,32 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.ajvanegasv.kontio.presentation.accounts.AccountsScreen
 import dev.ajvanegasv.kontio.presentation.accounts.AccountsViewModel
 import dev.ajvanegasv.kontio.presentation.accounts.components.AddAccountBottomSheet
 import dev.ajvanegasv.kontio.presentation.analytics.AnalyticsScreen
 import dev.ajvanegasv.kontio.presentation.backup.BackupViewModel
+import dev.ajvanegasv.kontio.presentation.budgets.BudgetsScreen
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardBottomNavBar
+import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardIcons
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardTab
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardTransaction
 import dev.ajvanegasv.kontio.presentation.dashboard.components.MainBalanceCard
 import dev.ajvanegasv.kontio.presentation.dashboard.components.QuickStatsSection
 import dev.ajvanegasv.kontio.presentation.dashboard.components.RecentTransactionsSection
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassBottomSheetContainer
+import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.LocalHazeState
 import dev.ajvanegasv.kontio.presentation.designsystem.theme.LocalKontioMeshColors
 import dev.ajvanegasv.kontio.domain.model.TransactionType
@@ -86,6 +99,7 @@ fun Dashboard(
     var transactionPendingDelete by remember { mutableStateOf<DashboardTransaction?>(null) }
     var isShowingTransactions by remember { mutableStateOf(false) }
     var isShowingCategories by remember { mutableStateOf(false) }
+    var isShowingBudgets by remember { mutableStateOf(false) }
     var transactionsInitialFilter by remember { mutableStateOf(TransactionFilter.ALL) }
 
     val dashboardState by dashboardViewModel.uiState.collectAsState()
@@ -121,6 +135,7 @@ fun Dashboard(
                             } else {
                                 isShowingTransactions = false
                                 isShowingCategories = false
+                                isShowingBudgets = false
                                 selectedTab = tab
                             }
                         }
@@ -141,7 +156,12 @@ fun Dashboard(
                     // Contenido según la pestaña activa
                     when (selectedTab) {
                         DashboardTab.HOME -> {
-                            if (isShowingTransactions) {
+                            if (isShowingBudgets) {
+                                BudgetsScreen(
+                                    onBackClick = { isShowingBudgets = false },
+                                    modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
+                                )
+                            } else if (isShowingTransactions) {
                                 TransactionsScreen(
                                     onBackClick = { isShowingTransactions = false },
                                     initialFilter = transactionsInitialFilter,
@@ -185,6 +205,85 @@ fun Dashboard(
                                             balance = dashboardState.balance,
                                             onAddFundsClick = { isAddTransactionOpen = true }
                                         )
+                                    }
+
+                                    // 1.5 Botón / Acceso directo a Presupuesto
+                                    item {
+                                        KontioGlassCard(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable { isShowingBudgets = true },
+                                            shape = RoundedCornerShape(20.dp),
+                                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 14.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(44.dp)
+                                                            .clip(CircleShape)
+                                                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = DashboardIcons.AccountBalanceWallet,
+                                                            contentDescription = "Presupuesto",
+                                                            tint = MaterialTheme.colorScheme.primary,
+                                                            modifier = Modifier.size(24.dp)
+                                                        )
+                                                    }
+
+                                                    Spacer(modifier = Modifier.width(14.dp))
+
+                                                    Column {
+                                                        Text(
+                                                            text = "Presupuesto",
+                                                            fontSize = 16.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = MaterialTheme.colorScheme.onSurface
+                                                        )
+                                                        Spacer(modifier = Modifier.height(2.dp))
+                                                        Text(
+                                                            text = "Controla tus metas de gasto y registra pagos",
+                                                            fontSize = 12.sp,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                }
+
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .clip(RoundedCornerShape(8.dp))
+                                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = "Gestionar",
+                                                            fontSize = 12.sp,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            color = MaterialTheme.colorScheme.primary
+                                                        )
+                                                    }
+
+                                                    Spacer(modifier = Modifier.width(6.dp))
+
+                                                    Icon(
+                                                        imageVector = DashboardIcons.ChevronRight,
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
 
                                     // 2. Sección de estadísticas rápidas (Ingresos y Gastos del mes)
@@ -236,7 +335,12 @@ fun Dashboard(
                         }
 
                         DashboardTab.MORE -> {
-                            if (isShowingCategories) {
+                            if (isShowingBudgets) {
+                                BudgetsScreen(
+                                    onBackClick = { isShowingBudgets = false },
+                                    modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
+                                )
+                            } else if (isShowingCategories) {
                                 CategoriesScreen(
                                     onBackClick = { isShowingCategories = false },
                                     modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
@@ -244,6 +348,7 @@ fun Dashboard(
                             } else {
                                 MoreScreen(
                                     onNavigateToCategories = { isShowingCategories = true },
+                                    onNavigateToBudgets = { isShowingBudgets = true },
                                     backupViewModel = backupViewModel,
                                     onImportStatementClick = { isImportStatementOpen = true },
                                     modifier = Modifier.hazeSource(state = hazeState, zIndex = 0f)
