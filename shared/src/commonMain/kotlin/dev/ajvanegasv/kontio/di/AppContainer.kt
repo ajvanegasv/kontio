@@ -196,6 +196,14 @@ object AppContainer {
         )
     }
 
+    val getFinancialSuggestionsUseCase: dev.ajvanegasv.kontio.domain.usecase.GetFinancialSuggestionsUseCase by lazy {
+        dev.ajvanegasv.kontio.domain.usecase.GetFinancialSuggestionsUseCase(
+            toolRegistry = kontioToolRegistry,
+            aiConfigStorage = aiConfigStorage,
+            geminiApiClient = geminiApiClient
+        )
+    }
+
     fun initializeApp(scope: CoroutineScope = CoroutineScope(Dispatchers.IO)) {
         scope.launch {
             categoryRepository.seedDefaultCategoriesIfEmpty()

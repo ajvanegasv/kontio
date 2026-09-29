@@ -11,7 +11,7 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.serialization.json.Json
 
-class GeminiApiClient(
+open class GeminiApiClient(
     private val httpClient: HttpClient = createGeminiHttpClient()
 ) {
     private val json = Json {
@@ -20,7 +20,7 @@ class GeminiApiClient(
         encodeDefaults = true
     }
 
-    suspend fun generateContent(
+    open suspend fun generateContent(
         apiKey: String,
         request: GeminiRequest,
         model: String = DEFAULT_MODEL

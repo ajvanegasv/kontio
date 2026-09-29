@@ -38,8 +38,11 @@ import androidx.compose.ui.unit.sp
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardIcons
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 
+import dev.ajvanegasv.kontio.domain.model.FinancialSuggestion
+
 /**
  * Barra de consulta interactiva con Kontio AI para búsquedas de transacciones y generación de reportes.
+ * Muestra chips de sugerencia dinámicos generados a partir de los datos de las herramientas financieras.
  */
 @Composable
 fun AiQueryBar(
@@ -47,18 +50,12 @@ fun AiQueryBar(
     onQueryChange: (String) -> Unit,
     onExecuteQuery: (String) -> Unit,
     isLoading: Boolean,
+    suggestions: List<FinancialSuggestion> = emptyList(),
+    isLoadingSuggestions: Boolean = false,
+    onRefreshSuggestions: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
-
-    val suggestionChips = listOf(
-        "🏦 Mis Bancos y Saldos" to "¿Cuáles son mis cuentas y cuánto dinero tengo?",
-        "📊 Gastos por Categoría" to "¿En qué categorías gasto más este mes?",
-        "💳 Tarjetas de Crédito" to "¿Cuál es el saldo y cupo de mis tarjetas?",
-        "🚗 Gastos en Uber" to "¿Cuánto he gastado en Uber este año?",
-        "🕒 Últimos Movimientos" to "¿Cuáles fueron mis últimas transacciones?",
-        "💡 Balance del Mes" to "¿Cómo van mis finanzas este mes?"
-    )
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -137,36 +134,86 @@ fun AiQueryBar(
             }
         }
 
-        // Carrusel de chips sugeridos
+        // Carrusel de chips sugeridos dinámicos generados por IA y las Tools
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            suggestionChips.forEach { (label, queryVal) ->
-                SuggestionChip(
-                    onClick = {
-                        onQueryChange(queryVal)
-                        onExecuteQuery(queryVal)
-                    },
-                    label = {
-                        Text(
-                            text = label,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
+            // Botón para refrescar o regenerar sugerencias con IA
+            if (onRefreshSuggestions != null) {
+                IconButton(
+                    onClick = onRefreshSuggestions,
+                    enabled = !isLoadingSuggestions,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    if (isLoadingSuggestions) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
                         )
-                    },
-                    colors = SuggestionChipDefaults.suggestionChipColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
-                        labelColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    border = SuggestionChipDefaults.suggestionChipBorder(
-                        enabled = true,
-                        borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                )
+                    } else {
+                        Icon(
+                            imageVector = DashboardIcons.AutoAwesome,
+                            contentDescription = "Regenerar sugerencias",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+
+            if (isLoadingSuggestions && suggestions.isEmpty()) {
+                repeat(3) {
+                    SuggestionChip(
+                        onClick = {},
+                        enabled = false,
+                        label = {
+                            Text(
+                                text = "✨ Analizando...",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            )
+                        },
+                        colors = SuggestionChipDefaults.suggestionChipColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.3f)
+                        ),
+                        border = SuggestionChipDefaults.suggestionChipBorder(
+                            enabled = true,
+                            borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            } else {
+                suggestions.forEach { suggestion ->
+                    SuggestionChip(
+                        onClick = {
+                            onQueryChange(suggestion.query)
+                            onExecuteQuery(suggestion.query)
+                        },
+                        label = {
+                            Text(
+                                text = suggestion.label,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        },
+                        colors = SuggestionChipDefaults.suggestionChipColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
+                            labelColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                        border = SuggestionChipDefaults.suggestionChipBorder(
+                            enabled = true,
+                            borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
             }
         }
     }

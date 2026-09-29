@@ -182,7 +182,10 @@ fun AnalyticsScreen(
                     queryText = state.queryText,
                     onQueryChange = { viewModel.onQueryChange(it) },
                     onExecuteQuery = { viewModel.executeAiQuery(it) },
-                    isLoading = state.isAiLoading
+                    isLoading = state.isAiLoading,
+                    suggestions = state.suggestions,
+                    isLoadingSuggestions = state.isLoadingSuggestions,
+                    onRefreshSuggestions = { viewModel.loadSuggestions(forceRefresh = true) }
                 )
             }
         }

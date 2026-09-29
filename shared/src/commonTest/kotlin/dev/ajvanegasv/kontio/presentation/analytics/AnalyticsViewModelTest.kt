@@ -146,4 +146,43 @@ class AnalyticsViewModelTest {
         assertEquals(85.0, report.totalAmount)
         assertEquals(1, report.transactionCount)
     }
+
+    @Test
+    fun testDynamicSuggestions_loadedInUiState() = runBlocking {
+        val catRepo = FakeAnalyticsCategoryRepository()
+        val txRepo = FakeAnalyticsTransactionRepository()
+        val getSummaryUseCase = GetAnalyticsSummaryUseCase(txRepo, catRepo)
+        val toolExecutor = FinancialToolExecutor(txRepo, catRepo)
+        val aiStorage = FakeTestAiConfigStorage()
+        val aiUseCase = AiFinancialAdvisorUseCase(toolExecutor, aiStorage)
+
+        val registry = dev.ajvanegasv.kontio.domain.agent.tools.KontioToolRegistry(
+            listOf(
+                dev.ajvanegasv.kontio.domain.agent.tools.GetAccountsSummaryTool(dev.ajvanegasv.kontio.domain.usecase.FakeAccountRepository()),
+                dev.ajvanegasv.kontio.domain.agent.tools.GetCategorySpendingTool(catRepo, txRepo),
+                dev.ajvanegasv.kontio.domain.agent.tools.GetRecentTransactionsTool(txRepo),
+                dev.ajvanegasv.kontio.domain.agent.tools.GetFinancialOverviewTool(txRepo)
+            )
+        )
+        val suggestionsUseCase = dev.ajvanegasv.kontio.domain.usecase.GetFinancialSuggestionsUseCase(
+            toolRegistry = registry,
+            aiConfigStorage = aiStorage
+        )
+
+        val viewModel = AnalyticsViewModel(
+            getAnalyticsSummaryUseCase = getSummaryUseCase,
+            aiFinancialAdvisorUseCase = aiUseCase,
+            getFinancialSuggestionsUseCase = suggestionsUseCase,
+            coroutineScope = CoroutineScope(Dispatchers.Unconfined),
+            sharingStarted = kotlinx.coroutines.flow.SharingStarted.Eagerly
+        )
+
+        // Las sugerencias deben cargarse en el estado inicial
+        val suggestions = viewModel.uiState.value.suggestions
+        kotlin.test.assertFalse(suggestions.isEmpty())
+
+        // Refrescar sugerencias
+        viewModel.loadSuggestions(forceRefresh = true)
+        kotlin.test.assertFalse(viewModel.uiState.value.suggestions.isEmpty())
+    }
 }

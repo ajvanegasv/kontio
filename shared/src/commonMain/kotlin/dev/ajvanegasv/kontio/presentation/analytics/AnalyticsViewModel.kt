@@ -21,6 +21,8 @@ import kotlinx.coroutines.launch
 
 import dev.ajvanegasv.kontio.domain.agent.model.AgentResponse
 import dev.ajvanegasv.kontio.domain.agent.service.KontioAgentUseCase
+import dev.ajvanegasv.kontio.domain.model.FinancialSuggestion
+import dev.ajvanegasv.kontio.domain.usecase.GetFinancialSuggestionsUseCase
 
 data class AnalyticsUiState(
     val summary: AnalyticsSummary = AnalyticsSummary(
@@ -36,7 +38,9 @@ data class AnalyticsUiState(
     val queryText: String = "",
     val aiReport: AiVisualReport? = null,
     val agentResponse: AgentResponse? = null,
+    val suggestions: List<FinancialSuggestion> = emptyList(),
     val isAiLoading: Boolean = false,
+    val isLoadingSuggestions: Boolean = false,
     val isLoadingSummary: Boolean = true,
     val errorMessage: String? = null
 )
@@ -44,6 +48,7 @@ data class AnalyticsUiState(
 class AnalyticsViewModel(
     private val getAnalyticsSummaryUseCase: GetAnalyticsSummaryUseCase = AppContainer.getAnalyticsSummaryUseCase,
     private val aiFinancialAdvisorUseCase: AiFinancialAdvisorUseCase = AppContainer.aiFinancialAdvisorUseCase,
+    private val getFinancialSuggestionsUseCase: GetFinancialSuggestionsUseCase? = null,
     private val agentUseCase: KontioAgentUseCase? = null,
     coroutineScope: CoroutineScope? = null,
     sharingStarted: SharingStarted = SharingStarted.WhileSubscribed(5000)
@@ -56,8 +61,14 @@ class AnalyticsViewModel(
     private val _queryText = MutableStateFlow("")
     private val _aiReport = MutableStateFlow<AiVisualReport?>(null)
     private val _agentResponse = MutableStateFlow<AgentResponse?>(null)
+    private val _suggestions = MutableStateFlow<List<FinancialSuggestion>>(emptyList())
     private val _isAiLoading = MutableStateFlow(false)
+    private val _isLoadingSuggestions = MutableStateFlow(false)
     private val _errorMessage = MutableStateFlow<String?>(null)
+
+    init {
+        loadSuggestions()
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<AnalyticsUiState> = combine(
@@ -74,12 +85,18 @@ class AnalyticsViewModel(
             queryText = query,
             aiReport = aiReport,
             agentResponse = agentResp,
+            suggestions = _suggestions.value,
             isAiLoading = false,
+            isLoadingSuggestions = _isLoadingSuggestions.value,
             isLoadingSummary = false,
             errorMessage = _errorMessage.value
         )
     }.combine(_isAiLoading) { state, isAiLoading ->
         state.copy(isAiLoading = isAiLoading)
+    }.combine(_suggestions) { state, suggestions ->
+        state.copy(suggestions = suggestions)
+    }.combine(_isLoadingSuggestions) { state, isLoadingSuggestions ->
+        state.copy(isLoadingSuggestions = isLoadingSuggestions)
     }.stateIn(
         scope = scope,
         started = sharingStarted,
@@ -125,5 +142,22 @@ class AnalyticsViewModel(
     fun dismissAiReport() {
         _aiReport.value = null
         _agentResponse.value = null
+    }
+
+    fun loadSuggestions(forceRefresh: Boolean = false) {
+        scope.launch {
+            _isLoadingSuggestions.value = true
+            try {
+                val useCase = getFinancialSuggestionsUseCase ?: runCatching { AppContainer.getFinancialSuggestionsUseCase }.getOrNull()
+                if (useCase != null) {
+                    val list = useCase(forceRefresh)
+                    _suggestions.value = list
+                }
+            } catch (_: Exception) {
+                // Silencioso para no degradar la experiencia en pantalla si falla
+            } finally {
+                _isLoadingSuggestions.value = false
+            }
+        }
     }
 }
