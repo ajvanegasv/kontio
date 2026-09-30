@@ -46,6 +46,7 @@ import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassBottomSh
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassTopAppBar
 import dev.ajvanegasv.kontio.presentation.designsystem.theme.isKontioDarkTheme
+import dev.ajvanegasv.kontio.presentation.util.BackHandler
 import dev.ajvanegasv.kontio.presentation.util.CurrencyFormatter
 
 @Composable
@@ -56,6 +57,11 @@ fun BudgetsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val isDark = isKontioDarkTheme()
+
+    val isAnySheetOpen = state.isAddBudgetOpen || state.budgetForPayment != null
+    BackHandler(enabled = !isAnySheetOpen) {
+        onBackClick()
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {

@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import dev.ajvanegasv.kontio.presentation.util.BackHandler
 import dev.chrisbanes.haze.hazeEffect
 
 /**
@@ -32,6 +33,8 @@ import dev.chrisbanes.haze.hazeEffect
  * - Despliegue y repliegue suave con animación vertical slide + fade.
  * - Interacción táctil segura: el tap en el telón de fondo dispara [onDismissRequest],
  *   mientras que los toques dentro de la tarjeta modal quedan aislados.
+ * - Integración con el modo gestos / botón atrás: cuando [visible] es verdadero,
+ *   intercepta el gesto atrás del sistema para cerrar la modal en lugar de minimizar la app.
  */
 @Composable
 fun KontioGlassBottomSheetContainer(
@@ -43,6 +46,10 @@ fun KontioGlassBottomSheetContainer(
     val hazeState = LocalHazeState.current
     val isDark = isKontioDarkTheme()
     val scrimStyle = GlassTokens.scrimBlurStyle()
+
+    BackHandler(enabled = visible) {
+        onDismissRequest()
+    }
 
     AnimatedVisibility(
         visible = visible,

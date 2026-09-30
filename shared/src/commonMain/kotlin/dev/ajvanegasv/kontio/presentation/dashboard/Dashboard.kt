@@ -73,6 +73,7 @@ import dev.ajvanegasv.kontio.presentation.statement.ImportStatementViewModel
 import dev.ajvanegasv.kontio.presentation.transactions.voice.VoiceTransactionViewModel
 import dev.ajvanegasv.kontio.presentation.transactions.voice.components.CreateTransactionChoiceBottomSheet
 import dev.ajvanegasv.kontio.presentation.transactions.voice.components.VoiceTransactionBottomSheet
+import dev.ajvanegasv.kontio.presentation.util.BackHandler
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 
@@ -111,6 +112,23 @@ fun Dashboard(
     val dashboardState by dashboardViewModel.uiState.collectAsState()
     val accountsState by accountsViewModel.uiState.collectAsState()
     val txCreationState by transactionViewModel.uiState.collectAsState()
+
+    val isAnyModalOpen = isCreateOptionsOpen ||
+        isVoiceTransactionOpen ||
+        isAddTransactionOpen ||
+        accountsState.isAccountFormOpen ||
+        isImportStatementOpen ||
+        transactionPendingDelete != null
+
+    BackHandler(
+        enabled = selectedTab != DashboardTab.HOME &&
+            !isShowingTransactions &&
+            !isShowingCategories &&
+            !isShowingBudgets &&
+            !isAnyModalOpen
+    ) {
+        selectedTab = DashboardTab.HOME
+    }
 
     CompositionLocalProvider(LocalHazeState provides hazeState) {
         Box(

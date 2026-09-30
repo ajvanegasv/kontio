@@ -47,6 +47,7 @@ import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardIcons
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassBottomSheetContainer
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassTopAppBar
+import dev.ajvanegasv.kontio.presentation.util.BackHandler
 import dev.ajvanegasv.kontio.presentation.util.IconMapper
 
 @Composable
@@ -57,6 +58,11 @@ fun CategoriesScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val isDark = isKontioDarkTheme()
+
+    val isModalOpen = state.isAddCategoryOpen || state.categoryPendingDelete != null
+    BackHandler(enabled = !isModalOpen) {
+        onBackClick()
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {

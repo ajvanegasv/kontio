@@ -49,6 +49,7 @@ import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardIcons
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.GlassTokens
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassTopAppBar
+import dev.ajvanegasv.kontio.presentation.util.BackHandler
 import dev.ajvanegasv.kontio.presentation.util.CurrencyFormatter
 import dev.ajvanegasv.kontio.presentation.util.DateFormatter
 import dev.ajvanegasv.kontio.presentation.util.IconMapper
@@ -77,6 +78,11 @@ fun AccountDetailScreen(
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
     var showReassignDialog by remember { mutableStateOf(false) }
     var transactionPendingDelete by remember { mutableStateOf<Transaction?>(null) }
+
+    val isAnyDialogOpen = showDeleteAccountDialog || showReassignDialog || transactionPendingDelete != null
+    BackHandler(enabled = !isAnyDialogOpen) {
+        onBackClick()
+    }
 
     val groupedTransactions = remember(transactions) {
         transactions.groupBy { DateFormatter.formatDateGroup(it.timestamp) }

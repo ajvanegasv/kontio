@@ -46,6 +46,7 @@ import dev.ajvanegasv.kontio.domain.model.TransactionType
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardIcons
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassTopAppBar
+import dev.ajvanegasv.kontio.presentation.util.BackHandler
 import dev.ajvanegasv.kontio.presentation.util.CurrencyFormatter
 
 @Composable
@@ -60,6 +61,10 @@ fun TransactionsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val isDark = isKontioDarkTheme()
+
+    BackHandler(enabled = true) {
+        onBackClick()
+    }
 
     LaunchedEffect(initialFilter) {
         viewModel.setFilter(initialFilter)
