@@ -173,11 +173,31 @@ open class GeminiStatementParser(
             }
 
             // Encontrar coincidencia de cuenta sugerida si no vino explícita
-            val matchedAccountId = accounts.firstOrNull { acc ->
-                analysis.detectedBank?.let { bank ->
-                    acc.name.contains(bank, ignoreCase = true)
-                } == true
-            }?.id
+            val detectedNum = analysis.detectedAccountNumber?.trim()?.takeIf { it.isNotEmpty() }
+            val detectedBank = analysis.detectedBank?.trim()?.takeIf { it.isNotEmpty() }
+
+            val matchedAccountId = when {
+                detectedNum != null && detectedBank != null -> {
+                    accounts.firstOrNull { acc ->
+                        acc.name.contains(detectedBank, ignoreCase = true) && acc.name.contains(detectedNum, ignoreCase = true)
+                    }?.id ?: accounts.firstOrNull { acc ->
+                        acc.name.contains(detectedNum, ignoreCase = true)
+                    }?.id ?: accounts.firstOrNull { acc ->
+                        acc.name.contains(detectedBank, ignoreCase = true)
+                    }?.id
+                }
+                detectedNum != null -> {
+                    accounts.firstOrNull { acc ->
+                        acc.name.contains(detectedNum, ignoreCase = true)
+                    }?.id
+                }
+                detectedBank != null -> {
+                    accounts.firstOrNull { acc ->
+                        acc.name.contains(detectedBank, ignoreCase = true)
+                    }?.id
+                }
+                else -> null
+            }
 
             ParsedStatementResult(
                 detectedBankName = analysis.detectedBank,

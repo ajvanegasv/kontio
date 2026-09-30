@@ -59,6 +59,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.ajvanegasv.kontio.domain.model.Account
+import dev.ajvanegasv.kontio.domain.model.AccountType
 import dev.ajvanegasv.kontio.domain.model.Category
 import dev.ajvanegasv.kontio.domain.model.ParsedStatementItem
 import dev.ajvanegasv.kontio.domain.model.StatementFile
@@ -526,6 +528,7 @@ private fun ReviewStatementSection(
 ) {
     val result = state.parsedResult ?: return
     val isDark = isKontioDarkTheme()
+    var showAccountSelectorDialog by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Encabezado del banco detectado
@@ -538,7 +541,7 @@ private fun ReviewStatementSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f, fill = false)) {
                 Text(
                     text = "BANCO DETECTADO",
                     fontSize = 10.sp,
@@ -550,24 +553,45 @@ private fun ReviewStatementSection(
                     text = "${result.detectedBankName ?: "Extracto Bancario"}${if (result.detectedAccountNumber != null) " (***${result.detectedAccountNumber})" else ""}",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
-            // Nombre de cuenta asignada
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Nombre de cuenta asignada - Chip interactivo para cambiar cuenta destino
             val targetAccount = state.accounts.firstOrNull { it.id == state.selectedAccountId }
-            if (targetAccount != null) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.8f))
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    .clickable { showAccountSelectorDialog = true }
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = targetAccount.name,
+                        text = targetAccount?.name ?: "Elegir cuenta",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.primary
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Icon(
+                        imageVector = DashboardIcons.Edit,
+                        contentDescription = "Cambiar cuenta",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp)
                     )
                 }
             }
@@ -751,6 +775,18 @@ private fun ReviewStatementSection(
                     fontWeight = FontWeight.Bold
                 )
             }
+        }
+
+        if (showAccountSelectorDialog) {
+            AccountSelectorDialog(
+                accounts = state.accounts,
+                currentAccountId = state.selectedAccountId,
+                onSelect = { accId ->
+                    onSelectAccount(accId)
+                    showAccountSelectorDialog = false
+                },
+                onDismiss = { showAccountSelectorDialog = false }
+            )
         }
     }
 }
@@ -1182,6 +1218,105 @@ private fun CategorySelectorDialog(
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                             color = MaterialTheme.colorScheme.onSurface
                         )
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        },
+        shape = RoundedCornerShape(20.dp)
+    )
+}
+
+@Composable
+private fun AccountSelectorDialog(
+    accounts: List<Account>,
+    currentAccountId: String?,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column {
+                Text(
+                    text = "Seleccionar Cuenta de Destino",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
+                )
+                Text(
+                    text = "Elige la cuenta donde se registrarán los movimientos",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        text = {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(accounts) { account ->
+                    val isSelected = account.id == currentAccountId
+                    val icon = when (account.type) {
+                        AccountType.CREDIT_CARD -> DashboardIcons.CreditCard
+                        AccountType.CASH -> DashboardIcons.AccountBalanceWallet
+                        else -> DashboardIcons.Home
+                    }
+                    val typeLabel = when (account.type) {
+                        AccountType.CREDIT_CARD -> "Tarjeta de Crédito"
+                        AccountType.SAVINGS -> "Cuenta de Ahorros"
+                        AccountType.CHECKING -> "Cuenta Corriente"
+                        AccountType.CASH -> "Efectivo"
+                        AccountType.DIGITAL_WALLET -> "Billetera Digital"
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                else Color.Transparent
+                            )
+                            .clickable { onSelect(account.id) }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = account.name,
+                                fontSize = 14.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "$typeLabel • ${CurrencyFormatter.format(account.balance, account.currency)}",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        if (isSelected) {
+                            Icon(
+                                imageVector = DashboardIcons.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }

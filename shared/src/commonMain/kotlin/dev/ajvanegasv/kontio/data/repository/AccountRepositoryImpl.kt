@@ -41,6 +41,12 @@ class AccountRepositoryImpl(
         accountDao.updateBalance(accountId, newBalance, now)
     }
 
+    override suspend fun archiveAccount(id: String) {
+        val account = accountDao.getAccountByIdDirect(id) ?: return
+        val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+        accountDao.updateAccount(account.copy(isArchived = true, updatedAt = now))
+    }
+
     override suspend fun deleteAccount(id: String) {
         accountDao.deleteAccount(id)
     }

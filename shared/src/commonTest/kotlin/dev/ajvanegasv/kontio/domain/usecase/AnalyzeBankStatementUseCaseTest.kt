@@ -63,6 +63,7 @@ class AnalyzeBankStatementUseCaseTest {
         override suspend fun insertAccount(account: Account) {}
         override suspend fun updateAccount(account: Account) {}
         override suspend fun updateBalance(accountId: String, newBalance: Double) {}
+        override suspend fun archiveAccount(id: String) {}
         override suspend fun deleteAccount(id: String) {}
         override suspend fun getAccountsCount(): Int = 0
     }

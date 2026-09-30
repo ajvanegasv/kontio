@@ -70,7 +70,8 @@ fun AccountDetailScreen(
     modifier: Modifier = Modifier,
     allAccounts: List<Account> = emptyList(),
     onEditTransaction: (Transaction) -> Unit = {},
-    onReassignTransactions: (toAccountId: String) -> Unit = {}
+    onReassignTransactions: (toAccountId: String) -> Unit = {},
+    onArchiveAccount: (Account) -> Unit = {}
 ) {
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
     var showReassignDialog by remember { mutableStateOf(false) }
@@ -499,34 +500,65 @@ fun AccountDetailScreen(
             }
         }
 
-        // Diálogo de Confirmación para Eliminar Cuenta
+        // Diálogo de Confirmación para Eliminar o Archivar Cuenta
         if (showDeleteAccountDialog) {
             AlertDialog(
                 onDismissRequest = { showDeleteAccountDialog = false },
                 title = {
                     Text(
-                        text = "¿Eliminar cuenta?",
+                        text = "¿Eliminar o archivar cuenta?",
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 },
                 text = {
-                    Text(
-                        text = "Se eliminará permanentemente '${account.name}' y sus registros asociados.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (transactions.isNotEmpty()) {
+                            Text(
+                                text = "⚠️ Esta cuenta tiene ${transactions.size} movimiento${if (transactions.size > 1) "s" else ""} registrado${if (transactions.size > 1) "s" else ""}.",
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                text = "Si eliminas la cuenta, todas sus transacciones se perderán permanentemente. Te recomendamos archivar la cuenta para conservar tu historial intacto.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 13.sp
+                            )
+                        } else {
+                            Text(
+                                text = "Se eliminará '${account.name}' de forma permanente. Puedes archivarla si prefieres ocultarla sin eliminarla definitivamente.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
                 },
                 confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showDeleteAccountDialog = false
-                            onDeleteAccount(account)
-                        },
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Eliminar", fontWeight = FontWeight.Bold)
+                        Button(
+                            onClick = {
+                                showDeleteAccountDialog = false
+                                onArchiveAccount(account)
+                            },
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Archivar cuenta")
+                        }
+                        TextButton(
+                            onClick = {
+                                showDeleteAccountDialog = false
+                                onDeleteAccount(account)
+                            },
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text("Eliminar definitivamente", fontWeight = FontWeight.Bold)
+                        }
                     }
                 },
                 dismissButton = {

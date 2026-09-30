@@ -11,6 +11,7 @@ import dev.ajvanegasv.kontio.domain.model.ParsedStatementResult
 import dev.ajvanegasv.kontio.domain.model.StatementFile
 import dev.ajvanegasv.kontio.domain.usecase.AnalyzeBankStatementUseCase
 import dev.ajvanegasv.kontio.domain.usecase.BatchImportTransactionsUseCase
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +38,7 @@ data class ImportStatementUiState(
     val accounts: List<Account> = emptyList(),
     val categories: List<Category> = emptyList(),
     val selectedAccountId: String? = null,
+    val isAccountManuallySelected: Boolean = false,
     val parsedResult: ParsedStatementResult? = null,
     val analysisMessage: String = "Preparando lectura...",
     val importedCount: Int = 0,
@@ -46,8 +48,12 @@ data class ImportStatementUiState(
 class ImportStatementViewModel(
     private val analyzeBankStatementUseCase: AnalyzeBankStatementUseCase = AppContainer.analyzeBankStatementUseCase,
     private val batchImportTransactionsUseCase: BatchImportTransactionsUseCase = AppContainer.batchImportTransactionsUseCase,
-    private val aiConfigStorage: AiConfigStorage = AppContainer.aiConfigStorage
+    private val aiConfigStorage: AiConfigStorage = AppContainer.aiConfigStorage,
+    private val accountRepository: dev.ajvanegasv.kontio.domain.repository.AccountRepository = AppContainer.accountRepository,
+    private val categoryRepository: dev.ajvanegasv.kontio.domain.repository.CategoryRepository = AppContainer.categoryRepository,
+    coroutineScope: CoroutineScope? = null
 ) : ViewModel() {
+    private val scope = coroutineScope ?: viewModelScope
     private val _uiState = MutableStateFlow(ImportStatementUiState())
     val uiState: StateFlow<ImportStatementUiState> = _uiState.asStateFlow()
 
@@ -56,7 +62,7 @@ class ImportStatementViewModel(
     }
 
     private fun loadInitialData() {
-        viewModelScope.launch {
+        scope.launch {
             val key = aiConfigStorage.getApiKey()
             val currentModel = aiConfigStorage.getModel().removePrefix("models/").trim().ifBlank { "gemini-3.8-flash" }
             _uiState.update {
@@ -70,7 +76,7 @@ class ImportStatementViewModel(
                 refreshAvailableModels(key)
             }
         }
-        viewModelScope.launch {
+        scope.launch {
             aiConfigStorage.apiKeyFlow.collect { key ->
                 _uiState.update {
                     it.copy(
@@ -80,14 +86,14 @@ class ImportStatementViewModel(
                 }
             }
         }
-        viewModelScope.launch {
+        scope.launch {
             aiConfigStorage.modelFlow.collect { currentModel ->
                 val clean = currentModel.removePrefix("models/").trim()
                 _uiState.update { it.copy(model = clean) }
             }
         }
-        viewModelScope.launch {
-            AppContainer.accountRepository.getAccounts().collect { accs ->
+        scope.launch {
+            accountRepository.getAccounts().collect { accs ->
                 _uiState.update { current ->
                     current.copy(
                         accounts = accs,
@@ -96,8 +102,8 @@ class ImportStatementViewModel(
                 }
             }
         }
-        viewModelScope.launch {
-            AppContainer.categoryRepository.getCategories().collect { cats ->
+        scope.launch {
+            categoryRepository.getCategories().collect { cats ->
                 _uiState.update { it.copy(categories = cats) }
             }
         }
@@ -139,7 +145,7 @@ class ImportStatementViewModel(
         val key = keyToUse ?: _uiState.value.apiKey ?: aiConfigStorage.getApiKey() ?: return
         if (key.isBlank()) return
 
-        viewModelScope.launch {
+        scope.launch {
             _uiState.update { it.copy(isLoadingModels = true) }
             val client = GeminiApiClient()
             client.fetchAvailableModels(key)
@@ -169,12 +175,12 @@ class ImportStatementViewModel(
     }
 
     fun selectAccount(accountId: String) {
-        _uiState.update { it.copy(selectedAccountId = accountId) }
+        _uiState.update { it.copy(selectedAccountId = accountId, isAccountManuallySelected = true) }
     }
 
     fun analyzeStatement() {
         val file = _uiState.value.selectedFile ?: return
-        viewModelScope.launch {
+        scope.launch {
             _uiState.update {
                 it.copy(
                     stage = ImportStage.ANALYZING,
@@ -185,9 +191,13 @@ class ImportStatementViewModel(
 
             analyzeBankStatementUseCase(file)
                 .onSuccess { result ->
-                    val matchedAccId = result.suggestedAccountId
-                        ?: _uiState.value.selectedAccountId
-                        ?: _uiState.value.accounts.firstOrNull()?.id
+                    val matchedAccId = if (_uiState.value.isAccountManuallySelected && _uiState.value.selectedAccountId != null) {
+                        _uiState.value.selectedAccountId
+                    } else {
+                        result.suggestedAccountId
+                            ?: _uiState.value.selectedAccountId
+                            ?: _uiState.value.accounts.firstOrNull()?.id
+                    }
 
                     _uiState.update {
                         it.copy(
@@ -241,7 +251,7 @@ class ImportStatementViewModel(
         val items = _uiState.value.parsedResult?.items ?: return
         val bankName = _uiState.value.parsedResult?.detectedBankName
 
-        viewModelScope.launch {
+        scope.launch {
             _uiState.update { it.copy(stage = ImportStage.IMPORTING) }
 
             batchImportTransactionsUseCase(
@@ -272,6 +282,7 @@ class ImportStatementViewModel(
             it.copy(
                 stage = ImportStage.FILE_SELECTION,
                 selectedFile = null,
+                isAccountManuallySelected = false,
                 parsedResult = null,
                 importedCount = 0,
                 errorMessage = null

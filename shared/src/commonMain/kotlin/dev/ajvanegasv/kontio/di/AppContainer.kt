@@ -15,6 +15,7 @@ import dev.ajvanegasv.kontio.domain.repository.BackupRepository
 import dev.ajvanegasv.kontio.domain.repository.BudgetRepository
 import dev.ajvanegasv.kontio.domain.repository.CategoryRepository
 import dev.ajvanegasv.kontio.domain.repository.TransactionRepository
+import dev.ajvanegasv.kontio.domain.usecase.ArchiveAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.CreateAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.CreateBudgetUseCase
 import dev.ajvanegasv.kontio.domain.usecase.CreateCategoryUseCase
@@ -133,6 +134,10 @@ object AppContainer {
             accountRepository = accountRepository,
             transactionRepository = transactionRepository
         )
+    }
+
+    val archiveAccountUseCase: ArchiveAccountUseCase by lazy {
+        ArchiveAccountUseCase(accountRepository)
     }
 
     val createCategoryUseCase: CreateCategoryUseCase by lazy {

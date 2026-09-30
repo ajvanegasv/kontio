@@ -6,6 +6,7 @@ import dev.ajvanegasv.kontio.domain.model.Transaction
 import dev.ajvanegasv.kontio.domain.model.TransactionType
 import dev.ajvanegasv.kontio.domain.repository.AccountRepository
 import dev.ajvanegasv.kontio.domain.repository.TransactionRepository
+import dev.ajvanegasv.kontio.domain.usecase.ArchiveAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.CreateAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteTransactionUseCase
@@ -24,7 +25,7 @@ import kotlin.test.assertTrue
 private class FakeAccountRepository : AccountRepository {
     private val accounts = MutableStateFlow<Map<String, Account>>(emptyMap())
 
-    override fun getAccounts(): Flow<List<Account>> = accounts.map { it.values.toList() }
+    override fun getAccounts(): Flow<List<Account>> = accounts.map { it.values.filterNot { acc -> acc.isArchived }.toList() }
     override fun getAccountById(id: String): Flow<Account?> = accounts.map { it[id] }
 
     override suspend fun insertAccount(account: Account) {
@@ -38,6 +39,11 @@ private class FakeAccountRepository : AccountRepository {
     override suspend fun updateBalance(accountId: String, newBalance: Double) {
         val current = accounts.value[accountId] ?: return
         accounts.value = accounts.value + (accountId to current.copy(balance = newBalance))
+    }
+
+    override suspend fun archiveAccount(id: String) {
+        val current = accounts.value[id] ?: return
+        accounts.value = accounts.value + (id to current.copy(isArchived = true))
     }
 
     override suspend fun deleteAccount(id: String) {
@@ -96,6 +102,7 @@ class AccountsViewModelTest {
         val txRepo = FakeTransactionRepository()
         val createAccUseCase = CreateAccountUseCase(accountRepo)
         val deleteAccUseCase = DeleteAccountUseCase(accountRepo, txRepo)
+        val archiveAccUseCase = ArchiveAccountUseCase(accountRepo)
         val deleteTxUseCase = DeleteTransactionUseCase(txRepo, accountRepo)
 
         val acc1 = Account(
@@ -159,6 +166,7 @@ class AccountsViewModelTest {
             transactionRepository = txRepo,
             createAccountUseCase = createAccUseCase,
             deleteAccountUseCase = deleteAccUseCase,
+            archiveAccountUseCase = archiveAccUseCase,
             deleteTransactionUseCase = deleteTxUseCase,
             reassignTransactionsAccountUseCase = ReassignTransactionsAccountUseCase(txRepo, accountRepo),
             coroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
@@ -197,6 +205,7 @@ class AccountsViewModelTest {
         val txRepo = FakeTransactionRepository()
         val createAccUseCase = CreateAccountUseCase(accountRepo)
         val deleteAccUseCase = DeleteAccountUseCase(accountRepo, txRepo)
+        val archiveAccUseCase = ArchiveAccountUseCase(accountRepo)
         val deleteTxUseCase = DeleteTransactionUseCase(txRepo, accountRepo)
         val reassignUseCase = ReassignTransactionsAccountUseCase(txRepo, accountRepo)
 
@@ -241,6 +250,7 @@ class AccountsViewModelTest {
             transactionRepository = txRepo,
             createAccountUseCase = createAccUseCase,
             deleteAccountUseCase = deleteAccUseCase,
+            archiveAccountUseCase = archiveAccUseCase,
             deleteTransactionUseCase = deleteTxUseCase,
             reassignTransactionsAccountUseCase = reassignUseCase,
             coroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
@@ -270,5 +280,91 @@ class AccountsViewModelTest {
         val updatedTx2 = txRepo.getTransactionById("tx-2")
         assertEquals("acc-correct", updatedTx1?.accountId)
         assertEquals("acc-correct", updatedTx2?.accountId)
+    }
+
+    @Test
+    fun testArchiveAccountPreservesTransactionsAndHidesFromActiveList() = runBlocking {
+        val accountRepo = FakeAccountRepository()
+        val txRepo = FakeTransactionRepository()
+        val createAccUseCase = CreateAccountUseCase(accountRepo)
+        val deleteAccUseCase = DeleteAccountUseCase(accountRepo, txRepo)
+        val archiveAccUseCase = ArchiveAccountUseCase(accountRepo)
+        val deleteTxUseCase = DeleteTransactionUseCase(txRepo, accountRepo)
+
+        val acc1 = Account(
+            id = "acc-active",
+            name = "Cuenta Activa",
+            type = AccountType.SAVINGS,
+            balance = 500.0,
+            currency = "USD"
+        )
+        val acc2 = Account(
+            id = "acc-to-archive",
+            name = "Cuenta Antigua",
+            type = AccountType.CHECKING,
+            balance = 100.0,
+            currency = "USD"
+        )
+        accountRepo.insertAccount(acc1)
+        accountRepo.insertAccount(acc2)
+
+        val tx1 = Transaction(
+            id = "tx-history-1",
+            accountId = "acc-to-archive",
+            categoryId = "cat-food",
+            type = TransactionType.EXPENSE,
+            amount = 30.0,
+            timestamp = 1000L
+        )
+        val tx2 = Transaction(
+            id = "tx-history-2",
+            accountId = "acc-to-archive",
+            categoryId = "cat-salary",
+            type = TransactionType.INCOME,
+            amount = 130.0,
+            timestamp = 2000L
+        )
+        txRepo.insertTransaction(tx1)
+        txRepo.insertTransaction(tx2)
+
+        val viewModel = AccountsViewModel(
+            accountRepository = accountRepo,
+            transactionRepository = txRepo,
+            createAccountUseCase = createAccUseCase,
+            deleteAccountUseCase = deleteAccUseCase,
+            archiveAccountUseCase = archiveAccUseCase,
+            deleteTransactionUseCase = deleteTxUseCase,
+            reassignTransactionsAccountUseCase = ReassignTransactionsAccountUseCase(txRepo, accountRepo),
+            coroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
+        )
+
+        // Inicialmente 2 cuentas y cuenta de transacciones = 2
+        val stateInitial = viewModel.uiState.first { it.accounts.size == 2 }
+        assertEquals(2, stateInitial.accounts.size)
+        assertEquals(2, stateInitial.accountTransactionCounts["acc-to-archive"])
+
+        // Seleccionar la cuenta para detalle
+        viewModel.selectAccountForDetail("acc-to-archive")
+        val stateSelected = viewModel.uiState.first { it.selectedAccountId == "acc-to-archive" }
+        assertEquals("acc-to-archive", stateSelected.selectedAccountId)
+
+        // Archivar la cuenta
+        viewModel.archiveAccount("acc-to-archive")
+
+        // La cuenta debe desaparecer de accounts activas y deseleccionarse
+        val stateAfterArchive = viewModel.uiState.first { it.accounts.size == 1 }
+        assertEquals(1, stateAfterArchive.accounts.size)
+        assertEquals("acc-active", stateAfterArchive.accounts.first().id)
+        assertNull(stateAfterArchive.selectedAccountId)
+
+        // Las transacciones en txRepo DEBEN PERMANECER intactas (soft delete)
+        assertEquals(2, txRepo.getTransactionsCount())
+        assertNotNull(txRepo.getTransactionById("tx-history-1"))
+        assertNotNull(txRepo.getTransactionById("tx-history-2"))
+
+        // La cuenta en repositorio tiene isArchived = true
+        val archivedAcc = accountRepo.getAccountById("acc-to-archive").first()
+        assertNotNull(archivedAcc)
+        assertTrue(archivedAcc.isArchived)
     }
 }

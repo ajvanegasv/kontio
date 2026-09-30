@@ -72,6 +72,7 @@ fun AccountsScreen(
                 viewModel.reassignAccountTransactions(selectedAcc.id, toAccountId)
             },
             onDeleteAccount = { viewModel.deleteAccount(it.id) },
+            onArchiveAccount = { viewModel.archiveAccount(it.id) },
             onDeleteTransaction = { viewModel.deleteTransaction(it.id) },
             modifier = modifier
         )
@@ -226,32 +227,66 @@ fun AccountsScreen(
 
         val accToDelete = accountPendingDelete
         if (accToDelete != null) {
+            val txCount = state.accountTransactionCounts[accToDelete.id] ?: 0
             AlertDialog(
                 onDismissRequest = { accountPendingDelete = null },
                 title = {
                     Text(
-                        text = "¿Eliminar cuenta?",
+                        text = "¿Eliminar o archivar cuenta?",
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 },
                 text = {
-                    Text(
-                        text = "Se eliminará '${accToDelete.name}' de forma permanente.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (txCount > 0) {
+                            Text(
+                                text = "⚠️ Esta cuenta tiene $txCount movimiento${if (txCount > 1) "s" else ""} registrado${if (txCount > 1) "s" else ""}.",
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                text = "Eliminarla borrará permanentemente todas sus transacciones sin posibilidad de recuperarlas. Te recomendamos archivarla para preservar tu historial financiero.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 13.sp
+                            )
+                        } else {
+                            Text(
+                                text = "Se eliminará '${accToDelete.name}' de forma permanente. Si deseas conservar el registro de esta cuenta, puedes archivarla.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
                 },
                 confirmButton = {
-                    TextButton(
-                        onClick = {
-                            viewModel.deleteAccount(accToDelete.id)
-                            accountPendingDelete = null
-                        },
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Eliminar", fontWeight = FontWeight.Bold)
+                        Button(
+                            onClick = {
+                                val accId = accToDelete.id
+                                accountPendingDelete = null
+                                viewModel.archiveAccount(accId)
+                            },
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Archivar")
+                        }
+                        TextButton(
+                            onClick = {
+                                val accId = accToDelete.id
+                                accountPendingDelete = null
+                                viewModel.deleteAccount(accId)
+                            },
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text("Eliminar permanentemente", fontWeight = FontWeight.Bold)
+                        }
                     }
                 },
                 dismissButton = {

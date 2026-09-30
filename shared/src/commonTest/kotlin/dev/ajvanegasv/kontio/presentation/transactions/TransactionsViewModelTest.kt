@@ -38,6 +38,11 @@ private class FakeTestAccountRepository : AccountRepository {
         accounts.value = accounts.value + (accountId to current.copy(balance = newBalance))
     }
 
+    override suspend fun archiveAccount(id: String) {
+        val current = accounts.value[id] ?: return
+        accounts.value = accounts.value + (id to current.copy(isArchived = true))
+    }
+
     override suspend fun deleteAccount(id: String) {
         accounts.value = accounts.value - id
     }

@@ -8,6 +8,7 @@ import dev.ajvanegasv.kontio.domain.model.AccountType
 import dev.ajvanegasv.kontio.domain.model.Transaction
 import dev.ajvanegasv.kontio.domain.repository.AccountRepository
 import dev.ajvanegasv.kontio.domain.repository.TransactionRepository
+import dev.ajvanegasv.kontio.domain.usecase.ArchiveAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.CreateAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteTransactionUseCase
@@ -27,6 +28,7 @@ data class AccountsUiState(
     val isAddAccountOpen: Boolean = false,
     val selectedAccountId: String? = null,
     val selectedAccountTransactions: List<Transaction> = emptyList(),
+    val accountTransactionCounts: Map<String, Int> = emptyMap(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 ) {
@@ -39,6 +41,7 @@ class AccountsViewModel(
     private val transactionRepository: TransactionRepository = AppContainer.transactionRepository,
     private val createAccountUseCase: CreateAccountUseCase = AppContainer.createAccountUseCase,
     private val deleteAccountUseCase: DeleteAccountUseCase = AppContainer.deleteAccountUseCase,
+    private val archiveAccountUseCase: ArchiveAccountUseCase = AppContainer.archiveAccountUseCase,
     private val deleteTransactionUseCase: DeleteTransactionUseCase = AppContainer.deleteTransactionUseCase,
     private val reassignTransactionsAccountUseCase: ReassignTransactionsAccountUseCase = AppContainer.reassignTransactionsAccountUseCase,
     coroutineScope: CoroutineScope? = null
@@ -74,6 +77,8 @@ class AccountsViewModel(
             emptyList()
         }
 
+        val transactionCounts = allTransactions.groupingBy { it.accountId }.eachCount()
+
         AccountsUiState(
             accounts = accounts,
             totalAssets = assets,
@@ -81,6 +86,7 @@ class AccountsViewModel(
             isAddAccountOpen = isAddOpen,
             selectedAccountId = selectedId,
             selectedAccountTransactions = accountTransactions,
+            accountTransactionCounts = transactionCounts,
             errorMessage = error,
             isLoading = false
         )
@@ -157,6 +163,20 @@ class AccountsViewModel(
                 }
             } else {
                 _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al eliminar la cuenta"
+            }
+            onComplete(result)
+        }
+    }
+
+    fun archiveAccount(accountId: String, onComplete: (Result<Unit>) -> Unit = {}) {
+        scope.launch {
+            val result = archiveAccountUseCase(accountId)
+            if (result.isSuccess) {
+                if (_selectedAccountId.value == accountId) {
+                    _selectedAccountId.value = null
+                }
+            } else {
+                _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al archivar la cuenta"
             }
             onComplete(result)
         }
