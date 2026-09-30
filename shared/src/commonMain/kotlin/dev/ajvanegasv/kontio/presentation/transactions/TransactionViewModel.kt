@@ -37,7 +37,7 @@ data class TransactionCreationUiState(
     val isSuccess: Boolean = false
 ) {
     val numericAmount: Double
-        get() = amountString.toDoubleOrNull() ?: 0.0
+        get() = amountString.replace(",", "").toDoubleOrNull() ?: 0.0
 
     val formattedDate: String
         get() = DateFormatter.formatDisplayDate(timestamp)

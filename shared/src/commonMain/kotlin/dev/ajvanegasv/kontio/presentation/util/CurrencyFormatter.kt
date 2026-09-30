@@ -15,13 +15,17 @@ object CurrencyFormatter {
         val decimalString = decimalPart.toString().padStart(2, '0')
 
         val sign = if (isNegative) "-" else if (showSign && amount > 0) "+" else ""
-        val symbol = when (currency.uppercase()) {
+        val symbol = getSymbol(currency)
+
+        return "$sign$symbol$longString.$decimalString"
+    }
+
+    fun getSymbol(currency: String = "USD"): String {
+        return when (currency.uppercase()) {
             "USD" -> "$"
             "EUR" -> "€"
             "COP" -> "$"
             else -> "$"
         }
-
-        return "$sign$symbol$longString.$decimalString"
     }
 }

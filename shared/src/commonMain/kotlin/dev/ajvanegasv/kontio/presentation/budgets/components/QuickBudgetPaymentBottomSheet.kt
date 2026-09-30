@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.ajvanegasv.kontio.domain.model.Account
 import dev.ajvanegasv.kontio.domain.model.BudgetWithProgress
+import dev.ajvanegasv.kontio.presentation.util.NumberInputFormatter
 import dev.ajvanegasv.kontio.domain.model.TransactionType
 import dev.ajvanegasv.kontio.presentation.categories.components.parseColorFromHex
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardIcons
@@ -184,7 +185,7 @@ fun QuickBudgetPaymentBottomSheet(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "$ $amountString",
+                text = "$ ${NumberInputFormatter.formatNumberString(amountString)}",
                 fontSize = 38.sp,
                 fontWeight = FontWeight.Bold,
                 color = if (willExceed && numericAmount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,

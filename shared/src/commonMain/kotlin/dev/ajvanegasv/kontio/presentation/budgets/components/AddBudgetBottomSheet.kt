@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.ajvanegasv.kontio.domain.model.Budget
 import dev.ajvanegasv.kontio.domain.model.BudgetPeriod
+import dev.ajvanegasv.kontio.presentation.util.NumberInputFormatter
 import dev.ajvanegasv.kontio.domain.model.Category
 import dev.ajvanegasv.kontio.presentation.categories.components.parseColorFromHex
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.GlassTokens
@@ -147,7 +148,7 @@ fun AddBudgetBottomSheet(
 
             // Display del Monto Límite
             Text(
-                text = "$ $amountString",
+                text = "$ ${NumberInputFormatter.formatNumberString(amountString)}",
                 fontSize = 36.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,

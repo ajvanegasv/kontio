@@ -52,7 +52,9 @@ import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardIcons
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.GlassTokens
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 import dev.ajvanegasv.kontio.presentation.transactions.TransactionCreationUiState
+import dev.ajvanegasv.kontio.presentation.util.CurrencyFormatter
 import dev.ajvanegasv.kontio.presentation.util.IconMapper
+import dev.ajvanegasv.kontio.presentation.util.NumberInputFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -169,8 +171,10 @@ fun AddTransactionBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Display del Monto
+            val selectedAccount = state.accounts.firstOrNull { it.id == state.selectedAccountId }
+            val currencySymbol = CurrencyFormatter.getSymbol(selectedAccount?.currency ?: "USD")
             Text(
-                text = "$ ${state.amountString}",
+                text = "$currencySymbol ${NumberInputFormatter.formatNumberString(state.amountString)}",
                 fontSize = 38.sp,
                 fontWeight = FontWeight.Bold,
                 color = if (state.type == TransactionType.INCOME) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface,

@@ -47,6 +47,8 @@ import dev.ajvanegasv.kontio.domain.model.AccountType
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.GlassTokens
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 import dev.ajvanegasv.kontio.presentation.designsystem.theme.isKontioDarkTheme
+import dev.ajvanegasv.kontio.presentation.util.NumberInputFormatter
+import dev.ajvanegasv.kontio.presentation.util.ThousandsSeparatorVisualTransformation
 
 @Composable
 fun AddAccountBottomSheet(
@@ -196,11 +198,14 @@ fun AddAccountBottomSheet(
             // Saldo
             OutlinedTextField(
                 value = balanceString,
-                onValueChange = { balanceString = it },
+                onValueChange = { balanceString = NumberInputFormatter.cleanNumericInput(it) },
                 label = { Text(if (selectedType == AccountType.CREDIT_CARD) "Saldo consumido / Deuda actual" else "Saldo inicial disponible") },
+                placeholder = { Text("0") },
+                prefix = { Text("$ ") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                visualTransformation = ThousandsSeparatorVisualTransformation(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -213,11 +218,14 @@ fun AddAccountBottomSheet(
                 // Cupo total
                 OutlinedTextField(
                     value = creditLimitString,
-                    onValueChange = { creditLimitString = it },
+                    onValueChange = { creditLimitString = NumberInputFormatter.cleanNumericInput(it, allowNegative = false) },
                     label = { Text("Cupo límite de la tarjeta") },
+                    placeholder = { Text("0") },
+                    prefix = { Text("$ ") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    visualTransformation = ThousandsSeparatorVisualTransformation(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -315,9 +323,9 @@ fun AddAccountBottomSheet(
 
             Button(
                 onClick = {
-                    val bal = balanceString.toDoubleOrNull() ?: 0.0
+                    val bal = balanceString.replace(",", "").toDoubleOrNull() ?: 0.0
                     val limit = if (selectedType == AccountType.CREDIT_CARD) {
-                        creditLimitString.toDoubleOrNull() ?: 0.0
+                        creditLimitString.replace(",", "").toDoubleOrNull() ?: 0.0
                     } else null
                     val cutoff = if (selectedType == AccountType.CREDIT_CARD) {
                         cutoffDayString.toIntOrNull()

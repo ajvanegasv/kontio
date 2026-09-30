@@ -30,9 +30,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.text.input.KeyboardType
+import dev.ajvanegasv.kontio.presentation.util.NumberInputFormatter
+import dev.ajvanegasv.kontio.presentation.util.ThousandsSeparatorVisualTransformation
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -671,8 +675,10 @@ private fun androidx.compose.foundation.layout.ColumnScope.EditablePreviewView(
 
     OutlinedTextField(
         value = draft.amountString,
-        onValueChange = onAmountChange,
+        onValueChange = { onAmountChange(NumberInputFormatter.cleanNumericInput(it, allowNegative = false)) },
         modifier = Modifier.fillMaxWidth(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        visualTransformation = ThousandsSeparatorVisualTransformation(),
         prefix = {
             Text(
                 text = "$ ",

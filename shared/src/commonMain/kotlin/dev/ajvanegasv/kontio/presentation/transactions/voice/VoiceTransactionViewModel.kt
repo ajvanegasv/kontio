@@ -37,7 +37,7 @@ data class VoiceTransactionDraft(
     val confidence: Float = 1.0f
 ) {
     val numericAmount: Double
-        get() = amountString.toDoubleOrNull() ?: 0.0
+        get() = amountString.replace(",", "").toDoubleOrNull() ?: 0.0
 }
 
 data class VoiceTransactionUiState(
