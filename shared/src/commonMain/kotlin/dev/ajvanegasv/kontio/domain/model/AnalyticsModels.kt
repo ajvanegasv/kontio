@@ -37,6 +37,9 @@ data class AnalyticsSummary(
     val netSavings: Double,
     val savingsRate: Float, // 0.0f a 100.0f
     val categorySpendings: List<CategorySpending>,
+    val creditCardTotalExpenses: Double = 0.0,
+    val creditCardTotalIncome: Double = 0.0,
+    val creditCardCategorySpendings: List<CategorySpending> = emptyList(),
     val timeframe: AnalyticsTimeframe,
     val currency: String = "USD"
 )

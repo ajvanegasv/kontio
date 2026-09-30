@@ -92,6 +92,12 @@ class AnalyticsViewModelTest {
 
         viewModel.selectCategory(null)
         assertNull(viewModel.uiState.value.selectedCategoryId)
+
+        viewModel.selectCreditCategory(dummyCategory)
+        assertEquals("cat_test", viewModel.uiState.value.selectedCreditCategoryId)
+
+        viewModel.selectCreditCategory(null)
+        assertNull(viewModel.uiState.value.selectedCreditCategoryId)
     }
 
     @Test

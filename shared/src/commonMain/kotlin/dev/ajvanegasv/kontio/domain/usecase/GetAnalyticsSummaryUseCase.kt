@@ -1,5 +1,6 @@
 package dev.ajvanegasv.kontio.domain.usecase
 
+import dev.ajvanegasv.kontio.domain.model.AccountType
 import dev.ajvanegasv.kontio.domain.model.AnalyticsSummary
 import dev.ajvanegasv.kontio.domain.model.AnalyticsTimeframe
 import dev.ajvanegasv.kontio.domain.model.CategorySpending
@@ -45,16 +46,37 @@ class GetAnalyticsSummaryUseCase(
             val expenseMap = mutableMapOf<String, MutableList<Double>>()
             val expenseCounts = mutableMapOf<String, Int>()
 
+            var creditIncomeSum = 0.0
+            var creditExpensesSum = 0.0
+            val creditExpenseMap = mutableMapOf<String, MutableList<Double>>()
+            val creditExpenseCounts = mutableMapOf<String, Int>()
+
             filteredTransactions.forEach { tx ->
-                when (tx.type) {
-                    TransactionType.INCOME -> incomeSum += tx.amount
-                    TransactionType.EXPENSE -> {
-                        expensesSum += tx.amount
-                        expenseMap.getOrPut(tx.categoryId) { mutableListOf() }.add(tx.amount)
-                        expenseCounts[tx.categoryId] = (expenseCounts[tx.categoryId] ?: 0) + 1
+                val isCreditCard = tx.account?.type == AccountType.CREDIT_CARD
+
+                if (isCreditCard) {
+                    when (tx.type) {
+                        TransactionType.INCOME -> creditIncomeSum += tx.amount
+                        TransactionType.EXPENSE -> {
+                            creditExpensesSum += tx.amount
+                            creditExpenseMap.getOrPut(tx.categoryId) { mutableListOf() }.add(tx.amount)
+                            creditExpenseCounts[tx.categoryId] = (creditExpenseCounts[tx.categoryId] ?: 0) + 1
+                        }
+                        TransactionType.TRANSFER -> {
+                            // Las transferencias entre cuentas no son gastos netos
+                        }
                     }
-                    TransactionType.TRANSFER -> {
-                        // Las transferencias entre cuentas no son gastos netos
+                } else {
+                    when (tx.type) {
+                        TransactionType.INCOME -> incomeSum += tx.amount
+                        TransactionType.EXPENSE -> {
+                            expensesSum += tx.amount
+                            expenseMap.getOrPut(tx.categoryId) { mutableListOf() }.add(tx.amount)
+                            expenseCounts[tx.categoryId] = (expenseCounts[tx.categoryId] ?: 0) + 1
+                        }
+                        TransactionType.TRANSFER -> {
+                            // Las transferencias entre cuentas no son gastos netos
+                        }
                     }
                 }
             }
@@ -75,6 +97,22 @@ class GetAnalyticsSummaryUseCase(
                 )
             }.sortedByDescending { it.totalAmount }
 
+            val creditCardCategorySpendings = creditExpenseMap.map { (catId, amounts) ->
+                val catTotal = amounts.sum()
+                val pct = if (creditExpensesSum > 0.0) ((catTotal / creditExpensesSum) * 100.0).toFloat() else 0f
+                val cat = catMap[catId]
+
+                CategorySpending(
+                    categoryId = catId,
+                    categoryName = cat?.name ?: "Otros Gastos",
+                    iconName = cat?.iconName ?: "more_horiz",
+                    colorHex = cat?.colorHex ?: "#6B7280",
+                    totalAmount = catTotal,
+                    percentage = pct,
+                    transactionCount = creditExpenseCounts[catId] ?: amounts.size
+                )
+            }.sortedByDescending { it.totalAmount }
+
             val netSavings = incomeSum - expensesSum
             val savingsRate = if (incomeSum > 0.0) {
                 ((netSavings / incomeSum) * 100.0).toFloat().coerceIn(0f, 100f)
@@ -88,6 +126,9 @@ class GetAnalyticsSummaryUseCase(
                 netSavings = netSavings,
                 savingsRate = savingsRate,
                 categorySpendings = categorySpendings,
+                creditCardTotalExpenses = creditExpensesSum,
+                creditCardTotalIncome = creditIncomeSum,
+                creditCardCategorySpendings = creditCardCategorySpendings,
                 timeframe = timeframe,
                 currency = currency
             )

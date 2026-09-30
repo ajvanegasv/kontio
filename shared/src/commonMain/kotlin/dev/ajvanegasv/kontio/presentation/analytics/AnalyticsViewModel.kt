@@ -35,6 +35,7 @@ data class AnalyticsUiState(
     ),
     val selectedTimeframe: AnalyticsTimeframe = AnalyticsTimeframe.CURRENT_MONTH,
     val selectedCategoryId: String? = null,
+    val selectedCreditCategoryId: String? = null,
     val queryText: String = "",
     val aiReport: AiVisualReport? = null,
     val agentResponse: AgentResponse? = null,
@@ -58,6 +59,7 @@ class AnalyticsViewModel(
 
     private val _timeframe = MutableStateFlow(AnalyticsTimeframe.CURRENT_MONTH)
     private val _selectedCategoryId = MutableStateFlow<String?>(null)
+    private val _selectedCreditCategoryId = MutableStateFlow<String?>(null)
     private val _queryText = MutableStateFlow("")
     private val _aiReport = MutableStateFlow<AiVisualReport?>(null)
     private val _agentResponse = MutableStateFlow<AgentResponse?>(null)
@@ -74,23 +76,26 @@ class AnalyticsViewModel(
     val uiState: StateFlow<AnalyticsUiState> = combine(
         _timeframe.flatMapLatest { tf -> getAnalyticsSummaryUseCase(tf) },
         _selectedCategoryId,
+        _selectedCreditCategoryId,
         _queryText,
-        _aiReport,
-        _agentResponse
-    ) { summary, selectedCatId, query, aiReport, agentResp ->
+        _aiReport
+    ) { summary, selectedCatId, selectedCreditCatId, query, aiReport ->
         AnalyticsUiState(
             summary = summary,
             selectedTimeframe = summary.timeframe,
             selectedCategoryId = selectedCatId,
+            selectedCreditCategoryId = selectedCreditCatId,
             queryText = query,
             aiReport = aiReport,
-            agentResponse = agentResp,
+            agentResponse = _agentResponse.value,
             suggestions = _suggestions.value,
             isAiLoading = false,
             isLoadingSuggestions = _isLoadingSuggestions.value,
             isLoadingSummary = false,
             errorMessage = _errorMessage.value
         )
+    }.combine(_agentResponse) { state, agentResp ->
+        state.copy(agentResponse = agentResp)
     }.combine(_isAiLoading) { state, isAiLoading ->
         state.copy(isAiLoading = isAiLoading)
     }.combine(_suggestions) { state, suggestions ->
@@ -105,11 +110,16 @@ class AnalyticsViewModel(
 
     fun setTimeframe(timeframe: AnalyticsTimeframe) {
         _selectedCategoryId.value = null
+        _selectedCreditCategoryId.value = null
         _timeframe.value = timeframe
     }
 
     fun selectCategory(category: CategorySpending?) {
         _selectedCategoryId.value = category?.categoryId
+    }
+
+    fun selectCreditCategory(category: CategorySpending?) {
+        _selectedCreditCategoryId.value = category?.categoryId
     }
 
     fun onQueryChange(text: String) {

@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -106,55 +107,202 @@ fun AnalyticsScreen(
             }
         }
 
-        // 2. Tarjeta Principal con Donut / Pie Chart interactivo
+        // 2. Tarjeta Principal con Donut / Pie Chart interactivo (Flujo de Caja - Cuentas & Efectivo)
         item {
-            KontioGlassCard(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                contentPadding = PaddingValues(20.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    DonutPieChart(
-                        spendings = state.summary.categorySpendings,
-                        selectedCategoryId = state.selectedCategoryId,
-                        onCategorySelect = { viewModel.selectCategory(it) },
-                        totalExpensesFormatted = CurrencyFormatter.format(state.summary.totalExpenses, state.summary.currency),
-                        currency = state.summary.currency
+                    Icon(
+                        imageVector = DashboardIcons.AccountBalanceWallet,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
                     )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Flujo de Caja (Cuentas & Efectivo)",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
 
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // Resumen rápido de Ingresos, Gastos y Ahorro
-                    Row(
+                KontioGlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    contentPadding = PaddingValues(20.dp)
+                ) {
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        SummaryPill(
-                            label = "Ingresos",
-                            amount = CurrencyFormatter.format(state.summary.totalIncome, state.summary.currency),
-                            color = MaterialTheme.colorScheme.secondary
+                        DonutPieChart(
+                            spendings = state.summary.categorySpendings,
+                            selectedCategoryId = state.selectedCategoryId,
+                            onCategorySelect = { viewModel.selectCategory(it) },
+                            totalExpensesFormatted = CurrencyFormatter.format(state.summary.totalExpenses, state.summary.currency),
+                            currency = state.summary.currency
                         )
 
-                        SummaryPill(
-                            label = "Gastos",
-                            amount = CurrencyFormatter.format(state.summary.totalExpenses, state.summary.currency),
-                            color = MaterialTheme.colorScheme.error
-                        )
+                        Spacer(modifier = Modifier.height(20.dp))
 
-                        SummaryPill(
-                            label = "Ahorro",
-                            amount = "${(state.summary.savingsRate * 10).toInt() / 10f}%",
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        // Resumen rápido de Ingresos, Gastos y Ahorro
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            SummaryPill(
+                                label = "Ingresos",
+                                amount = CurrencyFormatter.format(state.summary.totalIncome, state.summary.currency),
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+
+                            SummaryPill(
+                                label = "Gastos",
+                                amount = CurrencyFormatter.format(state.summary.totalExpenses, state.summary.currency),
+                                color = MaterialTheme.colorScheme.error
+                            )
+
+                            SummaryPill(
+                                label = "Ahorro",
+                                amount = "${(state.summary.savingsRate * 10).toInt() / 10f}%",
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        if (state.summary.categorySpendings.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(20.dp))
+                            CategorySpendingList(
+                                spendings = state.summary.categorySpendings,
+                                selectedCategoryId = state.selectedCategoryId,
+                                onCategorySelect = { cat ->
+                                    if (cat.categoryId == state.selectedCategoryId) {
+                                        viewModel.selectCategory(null)
+                                    } else {
+                                        viewModel.selectCategory(cat)
+                                    }
+                                },
+                                currency = state.summary.currency
+                            )
+                        }
                     }
                 }
             }
         }
 
-        // 3. Sección Asistente Financiero Kontio AI
+        // 3. Tarjeta Exclusiva de Tarjetas de Crédito
+        item {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = DashboardIcons.CreditCard,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Gastos con Tarjeta de Crédito",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                KontioGlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    contentPadding = PaddingValues(20.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        if (state.summary.creditCardCategorySpendings.isEmpty()) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = DashboardIcons.CreditCard,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(36.dp)
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    text = "Sin consumos en tarjeta de crédito",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "Los movimientos realizados con tarjeta de crédito se muestran de forma independiente de tu flujo de caja.",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        } else {
+                            DonutPieChart(
+                                spendings = state.summary.creditCardCategorySpendings,
+                                selectedCategoryId = state.selectedCreditCategoryId,
+                                onCategorySelect = { viewModel.selectCreditCategory(it) },
+                                totalExpensesFormatted = CurrencyFormatter.format(state.summary.creditCardTotalExpenses, state.summary.currency),
+                                currency = state.summary.currency
+                            )
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                SummaryPill(
+                                    label = "Consumos",
+                                    amount = CurrencyFormatter.format(state.summary.creditCardTotalExpenses, state.summary.currency),
+                                    color = MaterialTheme.colorScheme.error
+                                )
+
+                                SummaryPill(
+                                    label = "Abonos / Reembolsos",
+                                    amount = CurrencyFormatter.format(state.summary.creditCardTotalIncome, state.summary.currency),
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            CategorySpendingList(
+                                spendings = state.summary.creditCardCategorySpendings,
+                                selectedCategoryId = state.selectedCreditCategoryId,
+                                onCategorySelect = { cat ->
+                                    if (cat.categoryId == state.selectedCreditCategoryId) {
+                                        viewModel.selectCreditCategory(null)
+                                    } else {
+                                        viewModel.selectCreditCategory(cat)
+                                    }
+                                },
+                                currency = state.summary.currency
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Sección Asistente Financiero Kontio AI
         item {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -190,7 +338,7 @@ fun AnalyticsScreen(
             }
         }
 
-        // 4. Tarjeta de Reporte Visual con Gráficos (si hay una consulta activa)
+        // 5. Tarjeta de Reporte Visual con Gráficos (si hay una consulta activa)
         item {
             AnimatedVisibility(
                 visible = state.aiReport != null,
@@ -201,83 +349,6 @@ fun AnalyticsScreen(
                     AiVisualReportCard(
                         report = report,
                         onDismiss = { viewModel.dismissAiReport() }
-                    )
-                }
-            }
-        }
-
-        // 5. Ranking de Gastos por Categoría
-        item {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Categorías con Mayor Gasto",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    if (state.selectedCategoryId != null) {
-                        Text(
-                            text = "Limpiar filtro",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 4.dp)
-                        )
-                    }
-                }
-
-                if (state.summary.categorySpendings.isEmpty()) {
-                    KontioGlassCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp),
-                        contentPadding = PaddingValues(24.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = DashboardIcons.Category,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                modifier = Modifier.size(36.dp)
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                text = "Sin gastos en este periodo",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "Registra movimientos para visualizar el gráfico de torta y recomendaciones.",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
-                        }
-                    }
-                } else {
-                    CategorySpendingList(
-                        spendings = state.summary.categorySpendings,
-                        selectedCategoryId = state.selectedCategoryId,
-                        onCategorySelect = { cat ->
-                            if (cat.categoryId == state.selectedCategoryId) {
-                                viewModel.selectCategory(null)
-                            } else {
-                                viewModel.selectCategory(cat)
-                            }
-                        },
-                        currency = state.summary.currency
                     )
                 }
             }

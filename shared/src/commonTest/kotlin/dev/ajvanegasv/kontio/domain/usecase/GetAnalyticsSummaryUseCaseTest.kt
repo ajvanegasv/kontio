@@ -1,5 +1,7 @@
 package dev.ajvanegasv.kontio.domain.usecase
 
+import dev.ajvanegasv.kontio.domain.model.Account
+import dev.ajvanegasv.kontio.domain.model.AccountType
 import dev.ajvanegasv.kontio.domain.model.AnalyticsTimeframe
 import dev.ajvanegasv.kontio.domain.model.Category
 import dev.ajvanegasv.kontio.domain.model.Transaction
@@ -132,5 +134,52 @@ class GetAnalyticsSummaryUseCaseTest {
         assertEquals(100.0, top2.totalAmount)
         assertEquals(1, top2.transactionCount)
         assertTrue(top2.percentage > 33.0f && top2.percentage < 34.0f) // 100/300 = 33.3%
+    }
+
+    @Test
+    fun calculateSummary_excludesCreditCardFromMainSummaryAndPopulatesCreditCardSummary() = runBlocking {
+        val now = Clock.System.now().toEpochMilliseconds()
+        val foodCat = Category(id = "cat_food", name = "Alimentación", iconName = "restaurant", colorHex = "#F59E0B", type = TransactionType.EXPENSE)
+        val transportCat = Category(id = "cat_transport", name = "Transporte", iconName = "directions_car", colorHex = "#3B82F6", type = TransactionType.EXPENSE)
+
+        val savingsAccount = Account(
+            id = "acc_savings",
+            name = "Ahorros",
+            type = AccountType.SAVINGS,
+            balance = 1000.0
+        )
+        val creditAccount = Account(
+            id = "acc_credit",
+            name = "Visa Crédito",
+            type = AccountType.CREDIT_CARD,
+            balance = 500.0
+        )
+
+        val txList = listOf(
+            Transaction(id = "tx1", accountId = "acc_savings", categoryId = "cat_food", type = TransactionType.EXPENSE, amount = 100.0, timestamp = now, account = savingsAccount, category = foodCat),
+            Transaction(id = "tx2", accountId = "acc_savings", categoryId = "cat_salary", type = TransactionType.INCOME, amount = 1000.0, timestamp = now, account = savingsAccount),
+            Transaction(id = "tx3", accountId = "acc_credit", categoryId = "cat_transport", type = TransactionType.EXPENSE, amount = 250.0, timestamp = now, account = creditAccount, category = transportCat),
+            Transaction(id = "tx4", accountId = "acc_credit", categoryId = "cat_other_inc", type = TransactionType.INCOME, amount = 50.0, timestamp = now, account = creditAccount)
+        )
+
+        val catRepo = FakeAnalyticsCategoryRepository(listOf(foodCat, transportCat))
+        val txRepo = FakeAnalyticsTransactionRepository(txList)
+        val useCase = GetAnalyticsSummaryUseCase(txRepo, catRepo)
+
+        val summary = useCase(AnalyticsTimeframe.ALL_TIME).first()
+
+        // Métricas de flujo de caja regular (sin tarjetas de crédito)
+        assertEquals(1000.0, summary.totalIncome)
+        assertEquals(100.0, summary.totalExpenses)
+        assertEquals(900.0, summary.netSavings)
+        assertEquals(1, summary.categorySpendings.size)
+        assertEquals("cat_food", summary.categorySpendings[0].categoryId)
+
+        // Métricas exclusivas de Tarjeta de Crédito
+        assertEquals(250.0, summary.creditCardTotalExpenses)
+        assertEquals(50.0, summary.creditCardTotalIncome)
+        assertEquals(1, summary.creditCardCategorySpendings.size)
+        assertEquals("cat_transport", summary.creditCardCategorySpendings[0].categoryId)
+        assertEquals(250.0, summary.creditCardCategorySpendings[0].totalAmount)
     }
 }
