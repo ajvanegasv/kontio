@@ -30,6 +30,8 @@ import dev.ajvanegasv.kontio.domain.usecase.ReassignTransactionsAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.UpdateAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.UpdateBudgetUseCase
 import dev.ajvanegasv.kontio.domain.usecase.UpdateTransactionUseCase
+import dev.ajvanegasv.kontio.domain.usecase.GetSavingsCashWidgetDataUseCase
+import dev.ajvanegasv.kontio.domain.usecase.GetCreditCardWidgetDataUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -162,6 +164,20 @@ object AppContainer {
 
     val getDashboardSummaryUseCase: GetDashboardSummaryUseCase by lazy {
         GetDashboardSummaryUseCase(
+            accountRepository = accountRepository,
+            transactionRepository = transactionRepository
+        )
+    }
+
+    val getSavingsCashWidgetDataUseCase: GetSavingsCashWidgetDataUseCase by lazy {
+        GetSavingsCashWidgetDataUseCase(
+            accountRepository = accountRepository,
+            transactionRepository = transactionRepository
+        )
+    }
+
+    val getCreditCardWidgetDataUseCase: GetCreditCardWidgetDataUseCase by lazy {
+        GetCreditCardWidgetDataUseCase(
             accountRepository = accountRepository,
             transactionRepository = transactionRepository
         )

@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Kontio</string>
+    <string name="savings_cash_widget_name">Kontio - Ahorros y Efectivo</string>
+    <string name="savings_cash_widget_description">Consulta tu saldo disponible y el balance del mes de tus cuentas de ahorro y efectivo</string>
+    <string name="credit_card_widget_name">Kontio - Tarjetas de Crédito</string>
+    <string name="credit_card_widget_description">Consulta la deuda acumulada, gastos del mes y cupo disponible de tus tarjetas de crédito</string>
 </resources>
