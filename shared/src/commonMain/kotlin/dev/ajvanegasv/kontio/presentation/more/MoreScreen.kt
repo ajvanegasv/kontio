@@ -45,6 +45,7 @@ import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
 import dev.ajvanegasv.kontio.presentation.designsystem.theme.isKontioDarkTheme
 import dev.ajvanegasv.kontio.presentation.more.components.AiSettingsCard
 import dev.ajvanegasv.kontio.presentation.more.components.AiSettingsDialog
+import dev.ajvanegasv.kontio.presentation.util.rememberGoogleDriveAuthLauncher
 
 @Composable
 fun MoreScreen(
@@ -67,6 +68,15 @@ fun MoreScreen(
     )
     var isThemeDialogOpen by remember { mutableStateOf(false) }
     var isAiDialogOpen by remember { mutableStateOf(false) }
+
+    val launchGoogleAuth = rememberGoogleDriveAuthLauncher(
+        onAccountConnected = { email ->
+            backupViewModel.onGoogleAccountConnected(email)
+        },
+        onError = { error ->
+            backupViewModel.onGoogleAccountError(error)
+        }
+    )
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -519,7 +529,7 @@ fun MoreScreen(
 
                 BackupSettingsCard(
                     state = backupState,
-                    onConnectGoogle = { backupViewModel.connectGoogleAccount() },
+                    onConnectGoogle = launchGoogleAuth,
                     onDisconnectGoogle = { backupViewModel.disconnectGoogleAccount() },
                     onBackupClick = { backupViewModel.performBackup() },
                     onRestoreClick = { backupViewModel.restoreBackup() }

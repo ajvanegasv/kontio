@@ -13,6 +13,10 @@ actual class GoogleDriveBackupManager actual constructor() {
     private val _connectedAccount = MutableStateFlow<String?>(null)
     actual val connectedAccount: Flow<String?> = _connectedAccount.asStateFlow()
 
+    actual fun setConnectedAccount(email: String) {
+        _connectedAccount.value = email
+    }
+
     private var latestPayload: ByteArray? = null
     private var latestMetadata: BackupMetadata? = null
 

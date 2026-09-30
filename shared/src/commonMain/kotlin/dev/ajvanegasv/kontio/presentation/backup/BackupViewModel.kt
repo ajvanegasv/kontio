@@ -54,6 +54,20 @@ class BackupViewModel(
         }
     }
 
+    fun onGoogleAccountConnected(email: String) {
+        viewModelScope.launch {
+            _state.value = BackupState.Connecting("Vinculando con Google...")
+            backupRepository.setConnectedGoogleAccount(email)
+            _state.value = BackupState.Idle
+            _statusMessage.value = "Conectado a Google como $email"
+            backupRepository.getDriveBackupMetadata()
+        }
+    }
+
+    fun onGoogleAccountError(error: String) {
+        _state.value = BackupState.Error(error)
+    }
+
     fun connectGoogleAccount() {
         viewModelScope.launch {
             _state.value = BackupState.Connecting()
@@ -61,6 +75,7 @@ class BackupViewModel(
                 .onSuccess { email ->
                     _state.value = BackupState.Idle
                     _statusMessage.value = "Conectado a Google como $email"
+                    backupRepository.getDriveBackupMetadata()
                 }
                 .onFailure { error ->
                     _state.value = BackupState.Error(error.message ?: "No se pudo conectar")

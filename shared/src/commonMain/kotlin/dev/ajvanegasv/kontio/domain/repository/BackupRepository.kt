@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface BackupRepository {
     fun getConnectedGoogleAccount(): Flow<String?>
+    fun setConnectedGoogleAccount(email: String)
     fun getLatestLocalBackupMetadata(): Flow<BackupMetadata?>
     suspend fun connectGoogleAccount(): Result<String>
     suspend fun disconnectGoogleAccount(): Result<Unit>

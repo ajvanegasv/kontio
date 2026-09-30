@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -52,6 +53,7 @@ kotlin {
             implementation(libs.compose.uiTooling)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.play.services.auth)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -79,6 +81,35 @@ kotlin {
             implementation(libs.kotlin.test)
         }
     }
+}
+
+val generateGoogleConfig = tasks.register("generateGoogleConfig") {
+    val localProps = Properties().apply {
+        val f = rootProject.file("local.properties")
+        if (f.exists()) {
+            f.inputStream().use { load(it) }
+        }
+    }
+    val clientId = localProps.getProperty("google.drive.client.id", "").trim()
+    val outputDir = layout.buildDirectory.dir("generated/googleconfig/kotlin")
+    outputs.dir(outputDir)
+    doLast {
+        val file = outputDir.get().file("dev/ajvanegasv/kontio/data/backup/GoogleDriveConfig.kt").asFile
+        file.parentFile.mkdirs()
+        file.writeText(
+            """
+            package dev.ajvanegasv.kontio.data.backup
+
+            internal object GoogleDriveConfig {
+                const val CLIENT_ID: String = "$clientId"
+            }
+            """.trimIndent()
+        )
+    }
+}
+
+kotlin.sourceSets.named("androidMain") {
+    kotlin.srcDir(generateGoogleConfig)
 }
 
 dependencies {

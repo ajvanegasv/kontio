@@ -32,6 +32,7 @@ import dev.ajvanegasv.kontio.presentation.backup.BackupViewModel
 import dev.ajvanegasv.kontio.presentation.backup.components.BackupSettingsCard
 import dev.ajvanegasv.kontio.presentation.dashboard.components.DashboardIcons
 import dev.ajvanegasv.kontio.presentation.designsystem.glass.KontioGlassCard
+import dev.ajvanegasv.kontio.presentation.util.rememberGoogleDriveAuthLauncher
 
 @Composable
 fun ProfileScreen(
@@ -39,6 +40,15 @@ fun ProfileScreen(
     modifier: Modifier = Modifier
 ) {
     val backupState by backupViewModel.uiState.collectAsState()
+
+    val launchGoogleAuth = rememberGoogleDriveAuthLauncher(
+        onAccountConnected = { email ->
+            backupViewModel.onGoogleAccountConnected(email)
+        },
+        onError = { error ->
+            backupViewModel.onGoogleAccountError(error)
+        }
+    )
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -94,7 +104,7 @@ fun ProfileScreen(
         item {
             BackupSettingsCard(
                 state = backupState,
-                onConnectGoogle = { backupViewModel.connectGoogleAccount() },
+                onConnectGoogle = launchGoogleAuth,
                 onDisconnectGoogle = { backupViewModel.disconnectGoogleAccount() },
                 onBackupClick = { backupViewModel.performBackup() },
                 onRestoreClick = { backupViewModel.restoreBackup() }

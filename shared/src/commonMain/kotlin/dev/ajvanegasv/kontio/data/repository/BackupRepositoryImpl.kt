@@ -25,6 +25,10 @@ class BackupRepositoryImpl(
 
     override fun getConnectedGoogleAccount(): Flow<String?> = driveManager.connectedAccount
 
+    override fun setConnectedGoogleAccount(email: String) {
+        driveManager.setConnectedAccount(email)
+    }
+
     override suspend fun connectGoogleAccount(): Result<String> {
         return driveManager.connectAccount()
     }
@@ -126,6 +130,10 @@ class BackupRepositoryImpl(
     }
 
     override suspend fun getDriveBackupMetadata(): Result<BackupMetadata?> {
-        return driveManager.getLatestBackupMetadata()
+        return driveManager.getLatestBackupMetadata().onSuccess { meta ->
+            if (meta != null) {
+                _latestLocalMetadata.value = meta
+            }
+        }
     }
 }

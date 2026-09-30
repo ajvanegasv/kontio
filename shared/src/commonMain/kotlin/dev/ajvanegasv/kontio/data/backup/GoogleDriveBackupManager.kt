@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 expect class GoogleDriveBackupManager() {
     val connectedAccount: Flow<String?>
+    fun setConnectedAccount(email: String)
     suspend fun connectAccount(): Result<String>
     suspend fun disconnectAccount(): Result<Unit>
     suspend fun uploadBackup(payloadBytes: ByteArray, metadata: BackupMetadata): Result<BackupMetadata>
