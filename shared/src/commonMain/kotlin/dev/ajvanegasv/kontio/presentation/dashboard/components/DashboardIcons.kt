@@ -1169,6 +1169,80 @@ object DashboardIcons {
             close()
         }
     }
+
+    val Mic: ImageVector by lazy {
+        buildIcon("Mic") {
+            moveTo(12f, 14f)
+            curveTo(13.66f, 14f, 15f, 12.66f, 15f, 11f)
+            verticalLineTo(5f)
+            curveTo(15f, 3.34f, 13.66f, 2f, 12f, 2f)
+            curveTo(10.34f, 2f, 9f, 3.34f, 9f, 5f)
+            verticalLineTo(11f)
+            curveTo(9f, 12.66f, 10.34f, 14f, 12f, 14f)
+            close()
+            moveTo(11f, 5f)
+            curveTo(11f, 4.45f, 11.45f, 4f, 12f, 4f)
+            curveTo(12.55f, 4f, 13f, 4.45f, 13f, 5f)
+            verticalLineTo(11f)
+            curveTo(13f, 11.55f, 12.55f, 12f, 12f, 12f)
+            curveTo(11.45f, 12f, 11f, 11.55f, 11f, 11f)
+            verticalLineTo(5f)
+            close()
+            moveTo(17.3f, 11f)
+            curveTo(17.3f, 14f, 14.76f, 16.1f, 12f, 16.1f)
+            curveTo(9.24f, 16.1f, 6.7f, 14f, 6.7f, 11f)
+            horizontalLineTo(5f)
+            curveTo(5f, 14.41f, 7.72f, 17.23f, 11f, 17.72f)
+            verticalLineTo(21f)
+            horizontalLineTo(13f)
+            verticalLineTo(17.72f)
+            curveTo(16.28f, 17.23f, 19f, 14.41f, 19f, 11f)
+            horizontalLineTo(17.3f)
+            close()
+        }
+    }
+
+    val MicOff: ImageVector by lazy {
+        buildIcon("MicOff") {
+            moveTo(19f, 11f)
+            horizontalLineTo(17.3f)
+            curveTo(17.3f, 11.74f, 17.14f, 12.43f, 16.87f, 13.05f)
+            lineTo(18.18f, 14.36f)
+            curveTo(18.7f, 13.36f, 19f, 12.22f, 19f, 11f)
+            close()
+            moveTo(12f, 4f)
+            curveTo(12.55f, 4f, 13f, 4.45f, 13f, 5f)
+            verticalLineTo(7.17f)
+            lineTo(15f, 9.17f)
+            verticalLineTo(5f)
+            curveTo(15f, 3.34f, 13.66f, 2f, 12f, 2f)
+            curveTo(10.34f, 2f, 9f, 3.34f, 9f, 5f)
+            verticalLineTo(5.17f)
+            lineTo(11f, 7.17f)
+            verticalLineTo(5f)
+            curveTo(11f, 4.45f, 11.45f, 4f, 12f, 4f)
+            close()
+            moveTo(4.27f, 3f)
+            lineTo(3f, 4.27f)
+            lineTo(9.01f, 10.28f)
+            verticalLineTo(11f)
+            curveTo(9.01f, 12.66f, 10.34f, 14f, 12f, 14f)
+            curveTo(12.22f, 14f, 12.44f, 13.97f, 12.65f, 13.92f)
+            lineTo(14.31f, 15.58f)
+            curveTo(13.6f, 15.91f, 12.81f, 16.1f, 12f, 16.1f)
+            curveTo(9.24f, 16.1f, 6.7f, 14f, 6.7f, 11f)
+            horizontalLineTo(5f)
+            curveTo(5f, 14.41f, 7.72f, 17.23f, 11f, 17.72f)
+            verticalLineTo(21f)
+            horizontalLineTo(13f)
+            verticalLineTo(17.72f)
+            curveTo(13.91f, 17.59f, 14.77f, 17.27f, 15.54f, 16.82f)
+            lineTo(19.73f, 21f)
+            lineTo(21f, 19.73f)
+            lineTo(4.27f, 3f)
+            close()
+        }
+    }
 }
 
 

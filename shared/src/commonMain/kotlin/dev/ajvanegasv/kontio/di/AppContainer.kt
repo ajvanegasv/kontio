@@ -253,6 +253,13 @@ object AppContainer {
         )
     }
 
+    val parseVoiceTransactionUseCase: dev.ajvanegasv.kontio.domain.usecase.ParseVoiceTransactionUseCase by lazy {
+        dev.ajvanegasv.kontio.domain.usecase.ParseVoiceTransactionUseCase(
+            aiConfigStorage = aiConfigStorage,
+            geminiApiClient = geminiApiClient
+        )
+    }
+
     fun initializeApp(scope: CoroutineScope = CoroutineScope(Dispatchers.IO)) {
         scope.launch {
             categoryRepository.seedDefaultCategoriesIfEmpty()

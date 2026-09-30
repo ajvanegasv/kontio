@@ -70,6 +70,9 @@ import dev.ajvanegasv.kontio.presentation.transactions.TransactionViewModel
 import dev.ajvanegasv.kontio.presentation.transactions.components.AddTransactionBottomSheet
 import dev.ajvanegasv.kontio.presentation.statement.ImportStatementBottomSheet
 import dev.ajvanegasv.kontio.presentation.statement.ImportStatementViewModel
+import dev.ajvanegasv.kontio.presentation.transactions.voice.VoiceTransactionViewModel
+import dev.ajvanegasv.kontio.presentation.transactions.voice.components.CreateTransactionChoiceBottomSheet
+import dev.ajvanegasv.kontio.presentation.transactions.voice.components.VoiceTransactionBottomSheet
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 
@@ -86,6 +89,7 @@ fun Dashboard(
     dashboardViewModel: DashboardViewModel = viewModel { DashboardViewModel() },
     accountsViewModel: AccountsViewModel = viewModel { AccountsViewModel() },
     transactionViewModel: TransactionViewModel = viewModel { TransactionViewModel() },
+    voiceTransactionViewModel: VoiceTransactionViewModel = viewModel { VoiceTransactionViewModel() },
     backupViewModel: BackupViewModel = viewModel { BackupViewModel() },
     importStatementViewModel: ImportStatementViewModel = viewModel { ImportStatementViewModel() },
     onNotificationClick: () -> Unit = {},
@@ -94,6 +98,8 @@ fun Dashboard(
 ) {
     val hazeState = remember { HazeState() }
     var selectedTab by remember { mutableStateOf(DashboardTab.HOME) }
+    var isCreateOptionsOpen by remember { mutableStateOf(false) }
+    var isVoiceTransactionOpen by remember { mutableStateOf(false) }
     var isAddTransactionOpen by remember { mutableStateOf(false) }
     var isImportStatementOpen by remember { mutableStateOf(false) }
     var transactionPendingDelete by remember { mutableStateOf<DashboardTransaction?>(null) }
@@ -126,12 +132,7 @@ fun Dashboard(
                         selectedTab = selectedTab,
                         onTabSelected = { tab ->
                             if (tab == DashboardTab.ADD) {
-                                val activeAccountId = accountsState.selectedAccountId
-                                transactionViewModel.prepareTransaction(
-                                    type = TransactionType.EXPENSE,
-                                    accountId = activeAccountId
-                                )
-                                isAddTransactionOpen = true
+                                isCreateOptionsOpen = true
                             } else {
                                 isShowingTransactions = false
                                 isShowingCategories = false
@@ -367,6 +368,44 @@ fun Dashboard(
                         }
                     }
                 }
+            }
+
+            // Modal inferior para seleccionar modalidad de creación (Manual vs Voz con IA)
+            KontioGlassBottomSheetContainer(
+                visible = isCreateOptionsOpen,
+                onDismissRequest = { isCreateOptionsOpen = false }
+            ) {
+                CreateTransactionChoiceBottomSheet(
+                    onManualClick = {
+                        isCreateOptionsOpen = false
+                        val activeAccountId = accountsState.selectedAccountId
+                        transactionViewModel.prepareTransaction(
+                            type = TransactionType.EXPENSE,
+                            accountId = activeAccountId
+                        )
+                        isAddTransactionOpen = true
+                    },
+                    onVoiceClick = {
+                        isCreateOptionsOpen = false
+                        voiceTransactionViewModel.startDictation()
+                        isVoiceTransactionOpen = true
+                    },
+                    onDismiss = { isCreateOptionsOpen = false }
+                )
+            }
+
+            // Modal inferior para Crear Transacción con Voz e IA
+            KontioGlassBottomSheetContainer(
+                visible = isVoiceTransactionOpen,
+                onDismissRequest = { isVoiceTransactionOpen = false }
+            ) {
+                VoiceTransactionBottomSheet(
+                    viewModel = voiceTransactionViewModel,
+                    onDismiss = { isVoiceTransactionOpen = false },
+                    onSuccess = {
+                        isVoiceTransactionOpen = false
+                    }
+                )
             }
 
             // Modal inferior de Registro de Transacción con animación fluida y fondo difuminado
