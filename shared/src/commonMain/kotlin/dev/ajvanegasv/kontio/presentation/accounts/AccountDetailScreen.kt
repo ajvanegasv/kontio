@@ -69,6 +69,7 @@ fun AccountDetailScreen(
     onDeleteTransaction: (Transaction) -> Unit,
     modifier: Modifier = Modifier,
     allAccounts: List<Account> = emptyList(),
+    onEditAccount: (Account) -> Unit = {},
     onEditTransaction: (Transaction) -> Unit = {},
     onReassignTransactions: (toAccountId: String) -> Unit = {},
     onArchiveAccount: (Account) -> Unit = {}
@@ -128,6 +129,14 @@ fun AccountDetailScreen(
                                 modifier = Modifier.size(24.dp)
                             )
                         }
+                    }
+                    IconButton(onClick = { onEditAccount(account) }) {
+                        Icon(
+                            imageVector = DashboardIcons.Edit,
+                            contentDescription = "Editar Cuenta",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
                     IconButton(onClick = { showDeleteAccountDialog = true }) {
                         Icon(

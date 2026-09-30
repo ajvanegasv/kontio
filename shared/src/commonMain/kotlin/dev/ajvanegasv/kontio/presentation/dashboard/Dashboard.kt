@@ -392,21 +392,39 @@ fun Dashboard(
                 )
             }
 
-            // Modal inferior para Agregar Cuenta con animación fluida y fondo difuminado
+            // Modal inferior para Agregar o Editar Cuenta con animación fluida y fondo difuminado
             KontioGlassBottomSheetContainer(
-                visible = accountsState.isAddAccountOpen,
-                onDismissRequest = { accountsViewModel.closeAddAccount() }
+                visible = accountsState.isAccountFormOpen,
+                onDismissRequest = { accountsViewModel.closeAccountForm() }
             ) {
+                val editingAccount = accountsState.editingAccount
                 AddAccountBottomSheet(
-                    onDismiss = { accountsViewModel.closeAddAccount() },
-                    onSaveAccount = { name, type, balance, creditLimit, colorHex ->
-                        accountsViewModel.createAccount(
-                            name = name,
-                            type = type,
-                            initialBalance = balance,
-                            creditLimit = creditLimit,
-                            colorHex = colorHex
-                        )
+                    onDismiss = { accountsViewModel.closeAccountForm() },
+                    accountToEdit = editingAccount,
+                    onSaveAccount = { name, type, balance, creditLimit, colorHex, cutoffDay, dueDay ->
+                        if (editingAccount != null) {
+                            accountsViewModel.updateAccount(
+                                editingAccount.copy(
+                                    name = name,
+                                    type = type,
+                                    balance = balance,
+                                    creditLimit = creditLimit,
+                                    colorHex = colorHex,
+                                    cutoffDay = cutoffDay,
+                                    dueDay = dueDay
+                                )
+                            )
+                        } else {
+                            accountsViewModel.createAccount(
+                                name = name,
+                                type = type,
+                                initialBalance = balance,
+                                creditLimit = creditLimit,
+                                colorHex = colorHex,
+                                cutoffDay = cutoffDay,
+                                dueDay = dueDay
+                            )
+                        }
                     },
                     errorMessage = accountsState.errorMessage
                 )

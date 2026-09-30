@@ -13,6 +13,7 @@ import dev.ajvanegasv.kontio.domain.usecase.CreateAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteTransactionUseCase
 import dev.ajvanegasv.kontio.domain.usecase.ReassignTransactionsAccountUseCase
+import dev.ajvanegasv.kontio.domain.usecase.UpdateAccountUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -21,11 +22,17 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+private data class AccountFormState(
+    val isOpen: Boolean = false,
+    val editingAccount: Account? = null
+)
+
 data class AccountsUiState(
     val accounts: List<Account> = emptyList(),
     val totalAssets: Double = 0.0,
     val totalLiabilities: Double = 0.0,
     val isAddAccountOpen: Boolean = false,
+    val editingAccount: Account? = null,
     val selectedAccountId: String? = null,
     val selectedAccountTransactions: List<Transaction> = emptyList(),
     val accountTransactionCounts: Map<String, Int> = emptyMap(),
@@ -34,12 +41,16 @@ data class AccountsUiState(
 ) {
     val selectedAccount: Account?
         get() = accounts.firstOrNull { it.id == selectedAccountId }
+
+    val isAccountFormOpen: Boolean
+        get() = isAddAccountOpen || editingAccount != null
 }
 
 class AccountsViewModel(
     private val accountRepository: AccountRepository = AppContainer.accountRepository,
     private val transactionRepository: TransactionRepository = AppContainer.transactionRepository,
     private val createAccountUseCase: CreateAccountUseCase = AppContainer.createAccountUseCase,
+    private val updateAccountUseCase: UpdateAccountUseCase = AppContainer.updateAccountUseCase,
     private val deleteAccountUseCase: DeleteAccountUseCase = AppContainer.deleteAccountUseCase,
     private val archiveAccountUseCase: ArchiveAccountUseCase = AppContainer.archiveAccountUseCase,
     private val deleteTransactionUseCase: DeleteTransactionUseCase = AppContainer.deleteTransactionUseCase,
@@ -49,7 +60,7 @@ class AccountsViewModel(
 
     private val scope = coroutineScope ?: viewModelScope
 
-    private val _isAddAccountOpen = MutableStateFlow(false)
+    private val _formState = MutableStateFlow(AccountFormState())
     private val _selectedAccountId = MutableStateFlow<String?>(null)
     private val _errorMessage = MutableStateFlow<String?>(null)
 
@@ -57,9 +68,9 @@ class AccountsViewModel(
         accountRepository.getAccounts(),
         transactionRepository.getAllTransactions(),
         _selectedAccountId,
-        _isAddAccountOpen,
+        _formState,
         _errorMessage
-    ) { accounts, allTransactions, selectedId, isAddOpen, error ->
+    ) { accounts, allTransactions, selectedId, formState, error ->
         var assets = 0.0
         var liabilities = 0.0
 
@@ -83,7 +94,8 @@ class AccountsViewModel(
             accounts = accounts,
             totalAssets = assets,
             totalLiabilities = liabilities,
-            isAddAccountOpen = isAddOpen,
+            isAddAccountOpen = formState.isOpen && formState.editingAccount == null,
+            editingAccount = formState.editingAccount,
             selectedAccountId = selectedId,
             selectedAccountTransactions = accountTransactions,
             accountTransactionCounts = transactionCounts,
@@ -102,13 +114,22 @@ class AccountsViewModel(
     }
 
     fun openAddAccount() {
-        _isAddAccountOpen.value = true
+        _formState.value = AccountFormState(isOpen = true, editingAccount = null)
+        _errorMessage.value = null
+    }
+
+    fun openEditAccount(account: Account) {
+        _formState.value = AccountFormState(isOpen = true, editingAccount = account)
+        _errorMessage.value = null
+    }
+
+    fun closeAccountForm() {
+        _formState.value = AccountFormState(isOpen = false, editingAccount = null)
         _errorMessage.value = null
     }
 
     fun closeAddAccount() {
-        _isAddAccountOpen.value = false
-        _errorMessage.value = null
+        closeAccountForm()
     }
 
     fun createAccount(
@@ -146,11 +167,33 @@ class AccountsViewModel(
 
             val result = createAccountUseCase(newAccount)
             if (result.isSuccess) {
-                _isAddAccountOpen.value = false
-                _errorMessage.value = null
+                closeAccountForm()
             } else {
                 _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al crear la cuenta"
             }
+        }
+    }
+
+    fun updateAccount(account: Account, onComplete: (Result<Unit>) -> Unit = {}) {
+        scope.launch {
+            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val updated = account.copy(
+                iconName = when (account.type) {
+                    AccountType.SAVINGS -> "account_balance"
+                    AccountType.CHECKING -> "account_balance"
+                    AccountType.CREDIT_CARD -> "credit_card"
+                    AccountType.CASH -> "payments"
+                    AccountType.DIGITAL_WALLET -> "account_balance_wallet"
+                },
+                updatedAt = now
+            )
+            val result = updateAccountUseCase(updated)
+            if (result.isSuccess) {
+                closeAccountForm()
+            } else {
+                _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al actualizar la cuenta"
+            }
+            onComplete(result)
         }
     }
 

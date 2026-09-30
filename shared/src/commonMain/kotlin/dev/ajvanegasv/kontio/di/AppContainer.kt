@@ -27,6 +27,7 @@ import dev.ajvanegasv.kontio.domain.usecase.DeleteTransactionUseCase
 import dev.ajvanegasv.kontio.domain.usecase.GetBudgetsWithProgressUseCase
 import dev.ajvanegasv.kontio.domain.usecase.GetDashboardSummaryUseCase
 import dev.ajvanegasv.kontio.domain.usecase.ReassignTransactionsAccountUseCase
+import dev.ajvanegasv.kontio.domain.usecase.UpdateAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.UpdateBudgetUseCase
 import dev.ajvanegasv.kontio.domain.usecase.UpdateTransactionUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -118,6 +119,12 @@ object AppContainer {
 
     val createAccountUseCase: CreateAccountUseCase by lazy {
         CreateAccountUseCase(
+            accountRepository = accountRepository
+        )
+    }
+
+    val updateAccountUseCase: UpdateAccountUseCase by lazy {
+        UpdateAccountUseCase(
             accountRepository = accountRepository
         )
     }

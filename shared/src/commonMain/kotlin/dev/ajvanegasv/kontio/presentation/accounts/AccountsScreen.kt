@@ -67,6 +67,7 @@ fun AccountsScreen(
             allAccounts = state.accounts,
             onBackClick = { viewModel.selectAccountForDetail(null) },
             onAddTransactionClick = onAddTransactionForAccount,
+            onEditAccount = { viewModel.openEditAccount(it) },
             onEditTransaction = onEditTransaction,
             onReassignTransactions = { toAccountId ->
                 viewModel.reassignAccountTransactions(selectedAcc.id, toAccountId)
@@ -220,6 +221,7 @@ fun AccountsScreen(
                 AccountRowItem(
                     account = account,
                     onClick = { viewModel.selectAccountForDetail(account.id) },
+                    onEdit = { viewModel.openEditAccount(account) },
                     onDelete = { accountPendingDelete = account }
                 )
             }
@@ -324,6 +326,7 @@ fun AccountRowItem(
     account: Account,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    onEdit: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null
 ) {
     val clickModifier = if (onClick != null) {
@@ -404,6 +407,20 @@ fun AccountRowItem(
                         MaterialTheme.colorScheme.error
                     else MaterialTheme.colorScheme.onSurface
                 )
+
+                if (onEdit != null) {
+                    IconButton(
+                        onClick = onEdit,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = DashboardIcons.Edit,
+                            contentDescription = "Editar cuenta",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
 
                 if (onDelete != null) {
                     IconButton(

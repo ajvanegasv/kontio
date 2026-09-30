@@ -11,6 +11,7 @@ import dev.ajvanegasv.kontio.domain.usecase.CreateAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteAccountUseCase
 import dev.ajvanegasv.kontio.domain.usecase.DeleteTransactionUseCase
 import dev.ajvanegasv.kontio.domain.usecase.ReassignTransactionsAccountUseCase
+import dev.ajvanegasv.kontio.domain.usecase.UpdateAccountUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -161,10 +163,12 @@ class AccountsViewModelTest {
         txRepo.insertTransaction(txVisa2)
         txRepo.insertTransaction(txSavings)
 
+        val updateAccUseCase = UpdateAccountUseCase(accountRepo)
         val viewModel = AccountsViewModel(
             accountRepository = accountRepo,
             transactionRepository = txRepo,
             createAccountUseCase = createAccUseCase,
+            updateAccountUseCase = updateAccUseCase,
             deleteAccountUseCase = deleteAccUseCase,
             archiveAccountUseCase = archiveAccUseCase,
             deleteTransactionUseCase = deleteTxUseCase,
@@ -245,10 +249,12 @@ class AccountsViewModelTest {
         txRepo.insertTransaction(tx1)
         txRepo.insertTransaction(tx2)
 
+        val updateAccUseCase = UpdateAccountUseCase(accountRepo)
         val viewModel = AccountsViewModel(
             accountRepository = accountRepo,
             transactionRepository = txRepo,
             createAccountUseCase = createAccUseCase,
+            updateAccountUseCase = updateAccUseCase,
             deleteAccountUseCase = deleteAccUseCase,
             archiveAccountUseCase = archiveAccUseCase,
             deleteTransactionUseCase = deleteTxUseCase,
@@ -287,6 +293,7 @@ class AccountsViewModelTest {
         val accountRepo = FakeAccountRepository()
         val txRepo = FakeTransactionRepository()
         val createAccUseCase = CreateAccountUseCase(accountRepo)
+        val updateAccUseCase = UpdateAccountUseCase(accountRepo)
         val deleteAccUseCase = DeleteAccountUseCase(accountRepo, txRepo)
         val archiveAccUseCase = ArchiveAccountUseCase(accountRepo)
         val deleteTxUseCase = DeleteTransactionUseCase(txRepo, accountRepo)
@@ -331,6 +338,7 @@ class AccountsViewModelTest {
             accountRepository = accountRepo,
             transactionRepository = txRepo,
             createAccountUseCase = createAccUseCase,
+            updateAccountUseCase = updateAccUseCase,
             deleteAccountUseCase = deleteAccUseCase,
             archiveAccountUseCase = archiveAccUseCase,
             deleteTransactionUseCase = deleteTxUseCase,
@@ -366,5 +374,91 @@ class AccountsViewModelTest {
         val archivedAcc = accountRepo.getAccountById("acc-to-archive").first()
         assertNotNull(archivedAcc)
         assertTrue(archivedAcc.isArchived)
+    }
+
+    @Test
+    fun testEditAccountFlowUpdatesStateAndRepository() = runBlocking {
+        val accountRepo = FakeAccountRepository()
+        val txRepo = FakeTransactionRepository()
+        val createAccUseCase = CreateAccountUseCase(accountRepo)
+        val updateAccUseCase = UpdateAccountUseCase(accountRepo)
+        val deleteAccUseCase = DeleteAccountUseCase(accountRepo, txRepo)
+        val archiveAccUseCase = ArchiveAccountUseCase(accountRepo)
+        val deleteTxUseCase = DeleteTransactionUseCase(txRepo, accountRepo)
+
+        val acc = Account(
+            id = "acc_card",
+            name = "Tarjeta Oro",
+            type = AccountType.CREDIT_CARD,
+            balance = 300.0,
+            currency = "USD",
+            colorHex = "#F59E0B",
+            iconName = "credit_card",
+            creditLimit = 2000.0,
+            cutoffDay = 10,
+            dueDay = 25
+        )
+        accountRepo.insertAccount(acc)
+
+        val viewModel = AccountsViewModel(
+            accountRepository = accountRepo,
+            transactionRepository = txRepo,
+            createAccountUseCase = createAccUseCase,
+            updateAccountUseCase = updateAccUseCase,
+            deleteAccountUseCase = deleteAccUseCase,
+            archiveAccountUseCase = archiveAccUseCase,
+            deleteTransactionUseCase = deleteTxUseCase,
+            reassignTransactionsAccountUseCase = ReassignTransactionsAccountUseCase(txRepo, accountRepo),
+            coroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
+        )
+
+        // 1. Abrir edición
+        viewModel.openEditAccount(acc)
+        val editState = viewModel.uiState.first { it.editingAccount != null }
+        assertEquals(acc, editState.editingAccount)
+        assertTrue(editState.isAccountFormOpen)
+        assertFalse(editState.isAddAccountOpen)
+        assertNull(editState.errorMessage)
+
+        // 2. Intentar actualizar con nombre vacío -> Error
+        viewModel.updateAccount(acc.copy(name = "   "))
+        val errorState = viewModel.uiState.first { it.errorMessage != null }
+        assertEquals("El nombre de la cuenta no puede estar vacío", errorState.errorMessage)
+        assertTrue(errorState.isAccountFormOpen)
+
+        // 3. Actualizar con datos válidos -> Éxito y formulario se cierra
+        val modifiedAcc = acc.copy(
+            name = "Tarjeta Platino",
+            balance = 450.0,
+            creditLimit = 5000.0,
+            colorHex = "#8B5CF6",
+            cutoffDay = 15,
+            dueDay = 30
+        )
+        viewModel.updateAccount(modifiedAcc)
+
+        val successState = viewModel.uiState.first { !it.isAccountFormOpen && it.errorMessage == null }
+        assertNull(successState.editingAccount)
+        assertFalse(successState.isAccountFormOpen)
+        assertFalse(successState.isAddAccountOpen)
+
+        // Verificar que el repositorio persistió los cambios
+        val updatedInRepo = accountRepo.getAccountById("acc_card").first()
+        assertNotNull(updatedInRepo)
+        assertEquals("Tarjeta Platino", updatedInRepo.name)
+        assertEquals(450.0, updatedInRepo.balance)
+        assertEquals(5000.0, updatedInRepo.creditLimit)
+        assertEquals("#8B5CF6", updatedInRepo.colorHex)
+        assertEquals(15, updatedInRepo.cutoffDay)
+        assertEquals(30, updatedInRepo.dueDay)
+        assertEquals("credit_card", updatedInRepo.iconName)
+
+        // 4. Test closeAccountForm
+        viewModel.openEditAccount(acc)
+        assertTrue(viewModel.uiState.first { it.editingAccount != null }.isAccountFormOpen)
+        viewModel.closeAccountForm()
+        val closedState = viewModel.uiState.first { !it.isAccountFormOpen }
+        assertNull(closedState.editingAccount)
+        assertFalse(closedState.isAccountFormOpen)
     }
 }
