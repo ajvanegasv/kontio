@@ -2,10 +2,13 @@ package dev.ajvanegasv.kontio.presentation.transactions
 
 import dev.ajvanegasv.kontio.domain.model.Account
 import dev.ajvanegasv.kontio.domain.model.AccountType
+import dev.ajvanegasv.kontio.domain.model.Budget
+import dev.ajvanegasv.kontio.domain.model.BudgetWithProgress
 import dev.ajvanegasv.kontio.domain.model.Category
 import dev.ajvanegasv.kontio.domain.model.Transaction
 import dev.ajvanegasv.kontio.domain.model.TransactionType
 import dev.ajvanegasv.kontio.domain.repository.AccountRepository
+import dev.ajvanegasv.kontio.domain.repository.BudgetRepository
 import dev.ajvanegasv.kontio.domain.repository.CategoryRepository
 import dev.ajvanegasv.kontio.domain.repository.TransactionRepository
 import dev.ajvanegasv.kontio.domain.usecase.CreateTransactionUseCase
@@ -18,6 +21,36 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+
+private class FakeTestBudgetRepo : BudgetRepository {
+    private val budgets = MutableStateFlow<List<Budget>>(emptyList())
+    val linked = MutableStateFlow<Map<String, Set<String>>>(emptyMap())
+
+    fun setBudgets(list: List<Budget>) {
+        budgets.value = list
+    }
+
+    override fun getBudgets(): Flow<List<Budget>> = budgets
+    override fun getBudgetsWithProgress(): Flow<List<BudgetWithProgress>> = MutableStateFlow(emptyList())
+    override fun getBudgetById(id: String): Flow<Budget?> = MutableStateFlow(null)
+    override suspend fun getBudgetByIdDirect(id: String): Budget? = null
+    override suspend fun createBudget(budget: Budget): Result<Unit> = Result.success(Unit)
+    override suspend fun updateBudget(budget: Budget): Result<Unit> = Result.success(Unit)
+    override suspend fun deleteBudget(id: String): Result<Unit> = Result.success(Unit)
+    override suspend fun getBudgetsCount(): Int = budgets.value.size
+
+    override suspend fun linkTransactionToBudget(budgetId: String, transactionId: String): Result<Unit> {
+        val current = linked.value[budgetId] ?: emptySet()
+        linked.value = linked.value + (budgetId to (current + transactionId))
+        return Result.success(Unit)
+    }
+
+    override suspend fun unlinkTransactionFromBudget(budgetId: String, transactionId: String): Result<Unit> {
+        val current = linked.value[budgetId] ?: emptySet()
+        linked.value = linked.value + (budgetId to (current - transactionId))
+        return Result.success(Unit)
+    }
+}
 
 private class FakeTestAccountRepo : AccountRepository {
     private val accounts = MutableStateFlow<Map<String, Account>>(emptyMap())
@@ -157,9 +190,11 @@ class TransactionViewModelTest {
         catRepo.insertCategory(category)
 
         val updateTxUseCase = UpdateTransactionUseCase(txRepo, accountRepo)
+        val budgetRepo = FakeTestBudgetRepo()
         val viewModel = TransactionViewModel(
             accountRepository = accountRepo,
             categoryRepository = catRepo,
+            budgetRepository = budgetRepo,
             transactionRepository = txRepo,
             createTransactionUseCase = createTxUseCase,
             updateTransactionUseCase = updateTxUseCase,
@@ -238,9 +273,11 @@ class TransactionViewModelTest {
         )
         createTxUseCase(initialTx)
 
+        val budgetRepo = FakeTestBudgetRepo()
         val viewModel = TransactionViewModel(
             accountRepository = accountRepo,
             categoryRepository = catRepo,
+            budgetRepository = budgetRepo,
             transactionRepository = txRepo,
             createTransactionUseCase = createTxUseCase,
             updateTransactionUseCase = updateTxUseCase,
@@ -277,5 +314,72 @@ class TransactionViewModelTest {
         val updatedTx = txRepo.getTransactionById("tx-original")
         assertEquals("acc-2", updatedTx?.accountId)
         assertEquals("Almuerzo Reasignado", updatedTx?.note)
+    }
+
+    @Test
+    fun testCreateTransactionWithBudgetLinking() = runBlocking {
+        val accountRepo = FakeTestAccountRepo()
+        val catRepo = FakeTestCategoryRepo()
+        val txRepo = FakeTestTxRepo()
+        val budgetRepo = FakeTestBudgetRepo()
+        val createTxUseCase = CreateTransactionUseCase(txRepo, accountRepo)
+        val updateTxUseCase = UpdateTransactionUseCase(txRepo, accountRepo)
+
+        val account = Account(
+            id = "acc-main",
+            name = "Principal",
+            type = AccountType.CHECKING,
+            balance = 1000.0,
+            currency = "USD"
+        )
+        val category = Category(
+            id = "cat-food",
+            name = "Comida",
+            iconName = "restaurant",
+            colorHex = "#EF4444",
+            type = TransactionType.EXPENSE
+        )
+        val budget = Budget(
+            id = "bgt-lunch",
+            name = "Almuerzos",
+            categoryId = "cat-food",
+            limitAmount = 200.0
+        )
+        accountRepo.insertAccount(account)
+        catRepo.insertCategory(category)
+        budgetRepo.setBudgets(listOf(budget))
+
+        val viewModel = TransactionViewModel(
+            accountRepository = accountRepo,
+            categoryRepository = catRepo,
+            budgetRepository = budgetRepo,
+            transactionRepository = txRepo,
+            createTransactionUseCase = createTxUseCase,
+            updateTransactionUseCase = updateTxUseCase,
+            coroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
+        )
+
+        viewModel.prepareTransaction(type = TransactionType.EXPENSE, accountId = "acc-main")
+        viewModel.onNumberPadClick("7")
+        viewModel.onNumberPadClick("5")
+        viewModel.selectCategory("cat-food")
+        viewModel.selectBudget("bgt-lunch")
+        viewModel.setNote("Restaurante")
+
+        val state = viewModel.uiState.first { it.numericAmount == 75.0 && it.selectedBudgetId == "bgt-lunch" }
+        assertEquals(75.0, state.numericAmount)
+        assertEquals("bgt-lunch", state.selectedBudgetId)
+
+        var saved = false
+        viewModel.submitTransaction(onSuccess = { saved = true })
+        assertTrue(saved)
+
+        assertEquals(1, txRepo.savedTransactions.size)
+        val createdTx = txRepo.savedTransactions.first()
+        assertEquals(75.0, createdTx.amount)
+        assertEquals("bgt-lunch", createdTx.budgetId)
+
+        val links = budgetRepo.linked.value["bgt-lunch"]
+        assertTrue(links?.contains(createdTx.id) == true)
     }
 }

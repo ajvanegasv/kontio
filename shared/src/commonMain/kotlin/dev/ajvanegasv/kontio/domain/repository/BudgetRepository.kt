@@ -13,4 +13,6 @@ interface BudgetRepository {
     suspend fun updateBudget(budget: Budget): Result<Unit>
     suspend fun deleteBudget(id: String): Result<Unit>
     suspend fun getBudgetsCount(): Int
+    suspend fun linkTransactionToBudget(budgetId: String, transactionId: String): Result<Unit>
+    suspend fun unlinkTransactionFromBudget(budgetId: String, transactionId: String): Result<Unit>
 }

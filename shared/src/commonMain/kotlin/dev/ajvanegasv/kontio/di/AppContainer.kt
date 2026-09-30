@@ -62,7 +62,8 @@ object AppContainer {
         BudgetRepositoryImpl(
             budgetDao = database.budgetDao(),
             categoryDao = database.categoryDao(),
-            transactionDao = database.transactionDao()
+            transactionDao = database.transactionDao(),
+            budgetTransactionDao = database.budgetTransactionDao()
         )
     }
 
@@ -72,7 +73,8 @@ object AppContainer {
             categoryDao = database.categoryDao(),
             transactionDao = database.transactionDao(),
             driveManager = GoogleDriveBackupManager(),
-            budgetDao = database.budgetDao()
+            budgetDao = database.budgetDao(),
+            budgetTransactionDao = database.budgetTransactionDao()
         )
     }
 

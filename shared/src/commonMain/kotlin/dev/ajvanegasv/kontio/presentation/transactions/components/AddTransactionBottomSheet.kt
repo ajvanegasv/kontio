@@ -65,6 +65,7 @@ fun AddTransactionBottomSheet(
     onBackspaceClick: () -> Unit,
     onAccountSelect: (String) -> Unit,
     onCategorySelect: (String) -> Unit,
+    onBudgetSelect: (String?) -> Unit = {},
     onDateSelect: (Long) -> Unit = {},
     onNoteChange: (String) -> Unit,
     onSubmit: () -> Unit,
@@ -272,6 +273,74 @@ fun AddTransactionBottomSheet(
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurface
                         )
+                    }
+                }
+            }
+
+            // Selector opcional de Presupuesto para Gastos
+            if (state.type == TransactionType.EXPENSE && state.budgets.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = "Asignar a presupuesto (opcional):",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item {
+                        val isNoneSelected = state.selectedBudgetId == null
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (isNoneSelected) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.25f)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isNoneSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .clickable { onBudgetSelect(null) }
+                                .padding(horizontal = 12.dp, vertical = 7.dp)
+                        ) {
+                            Text(
+                                text = "Sin presupuesto",
+                                fontSize = 12.sp,
+                                fontWeight = if (isNoneSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+
+                    items(state.budgets) { budget ->
+                        val isSelected = budget.id == state.selectedBudgetId
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                    else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.25f)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .clickable { onBudgetSelect(budget.id) }
+                                .padding(horizontal = 12.dp, vertical = 7.dp)
+                        ) {
+                            Text(
+                                text = budget.name,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
             }

@@ -2,6 +2,7 @@ package dev.ajvanegasv.kontio.data.backup
 
 import dev.ajvanegasv.kontio.data.local.entity.AccountEntity
 import dev.ajvanegasv.kontio.data.local.entity.BudgetEntity
+import dev.ajvanegasv.kontio.data.local.entity.BudgetTransactionEntity
 import dev.ajvanegasv.kontio.data.local.entity.CategoryEntity
 import dev.ajvanegasv.kontio.data.local.entity.TransactionEntity
 import dev.ajvanegasv.kontio.domain.model.BackupMetadata
@@ -14,7 +15,8 @@ data class KontioBackupPayload(
     val accounts: List<AccountEntity>,
     val categories: List<CategoryEntity>,
     val transactions: List<TransactionEntity>,
-    val budgets: List<BudgetEntity> = emptyList()
+    val budgets: List<BudgetEntity> = emptyList(),
+    val budgetTransactions: List<BudgetTransactionEntity> = emptyList()
 ) {
     fun toBytes(): ByteArray {
         val jsonString = json.encodeToString(serializer(), this)

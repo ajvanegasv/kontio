@@ -438,6 +438,7 @@ fun Dashboard(
                     onBackspaceClick = { transactionViewModel.onBackspaceClick() },
                     onAccountSelect = { transactionViewModel.selectAccount(it) },
                     onCategorySelect = { transactionViewModel.selectCategory(it) },
+                    onBudgetSelect = { transactionViewModel.selectBudget(it) },
                     onDateSelect = { transactionViewModel.setDate(it) },
                     onNoteChange = { transactionViewModel.setNote(it) },
                     onSubmit = {

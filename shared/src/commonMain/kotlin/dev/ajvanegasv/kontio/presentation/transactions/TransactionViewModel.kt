@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.ajvanegasv.kontio.di.AppContainer
 import dev.ajvanegasv.kontio.domain.model.Account
+import dev.ajvanegasv.kontio.domain.model.Budget
 import dev.ajvanegasv.kontio.domain.model.Category
 import dev.ajvanegasv.kontio.domain.model.Transaction
 import dev.ajvanegasv.kontio.domain.model.TransactionType
 import dev.ajvanegasv.kontio.domain.repository.AccountRepository
+import dev.ajvanegasv.kontio.domain.repository.BudgetRepository
 import dev.ajvanegasv.kontio.domain.repository.CategoryRepository
 import dev.ajvanegasv.kontio.domain.repository.TransactionRepository
 import dev.ajvanegasv.kontio.domain.usecase.CreateTransactionUseCase
@@ -28,10 +30,12 @@ data class TransactionCreationUiState(
     val amountString: String = "0",
     val selectedAccountId: String? = null,
     val selectedCategoryId: String? = null,
+    val selectedBudgetId: String? = null,
     val note: String = "",
     val timestamp: Long = kotlin.time.Clock.System.now().toEpochMilliseconds(),
     val accounts: List<Account> = emptyList(),
     val categories: List<Category> = emptyList(),
+    val budgets: List<Budget> = emptyList(),
     val isSubmitting: Boolean = false,
     val errorMessage: String? = null,
     val isSuccess: Boolean = false
@@ -46,6 +50,7 @@ data class TransactionCreationUiState(
 class TransactionViewModel(
     accountRepository: AccountRepository = AppContainer.accountRepository,
     categoryRepository: CategoryRepository = AppContainer.categoryRepository,
+    private val budgetRepository: BudgetRepository = AppContainer.budgetRepository,
     private val transactionRepository: TransactionRepository = AppContainer.transactionRepository,
     private val createTransactionUseCase: CreateTransactionUseCase = AppContainer.createTransactionUseCase,
     private val updateTransactionUseCase: UpdateTransactionUseCase = AppContainer.updateTransactionUseCase,
@@ -61,6 +66,7 @@ class TransactionViewModel(
         val amountString: String = "0",
         val selectedAccountId: String? = null,
         val selectedCategoryId: String? = null,
+        val selectedBudgetId: String? = null,
         val note: String = "",
         val timestamp: Long = kotlin.time.Clock.System.now().toEpochMilliseconds()
     )
@@ -70,16 +76,24 @@ class TransactionViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     private val _isSuccess = MutableStateFlow(false)
 
-    val uiState: StateFlow<TransactionCreationUiState> = combine(
+    private val _staticDataFlow = combine(
         accountRepository.getAccounts(),
         categoryRepository.getCategories(),
+        budgetRepository.getBudgets()
+    ) { accounts, allCategories, allBudgets ->
+        Triple(accounts, allCategories, allBudgets)
+    }
+
+    val uiState: StateFlow<TransactionCreationUiState> = combine(
+        _staticDataFlow,
         _form,
         _errorMessage,
         _isSubmitting
-    ) { accounts, allCategories, form, error, submitting ->
+    ) { (accounts, allCategories, allBudgets), form, error, submitting ->
         val filteredCategories = allCategories.filter { it.type == form.type }
         val resolvedAccountId = form.selectedAccountId ?: accounts.firstOrNull()?.id
         val resolvedCategoryId = form.selectedCategoryId ?: filteredCategories.firstOrNull()?.id
+        val activeBudgets = if (form.type == TransactionType.EXPENSE) allBudgets else emptyList()
 
         TransactionCreationUiState(
             isEditing = form.isEditing,
@@ -88,10 +102,12 @@ class TransactionViewModel(
             amountString = form.amountString,
             selectedAccountId = resolvedAccountId,
             selectedCategoryId = resolvedCategoryId,
+            selectedBudgetId = form.selectedBudgetId,
             note = form.note,
             timestamp = form.timestamp,
             accounts = accounts,
             categories = filteredCategories,
+            budgets = activeBudgets,
             isSubmitting = submitting,
             errorMessage = error,
             isSuccess = _isSuccess.value
@@ -111,6 +127,7 @@ class TransactionViewModel(
             amountString = "0",
             selectedAccountId = accountId ?: _form.value.selectedAccountId,
             selectedCategoryId = null,
+            selectedBudgetId = null,
             note = "",
             timestamp = now
         )
@@ -130,6 +147,7 @@ class TransactionViewModel(
             amountString = amountStr,
             selectedAccountId = transaction.accountId,
             selectedCategoryId = transaction.categoryId,
+            selectedBudgetId = transaction.budgetId,
             note = transaction.note,
             timestamp = transaction.timestamp
         )
@@ -190,6 +208,10 @@ class TransactionViewModel(
         _form.value = _form.value.copy(selectedCategoryId = categoryId)
     }
 
+    fun selectBudget(budgetId: String?) {
+        _form.value = _form.value.copy(selectedBudgetId = budgetId)
+    }
+
     fun setNote(note: String) {
         _form.value = _form.value.copy(note = note)
     }
@@ -219,6 +241,7 @@ class TransactionViewModel(
             val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
             val txTimestamp = if (state.timestamp > 0L) state.timestamp else now
             val selectedCurrency = state.accounts.firstOrNull { it.id == accountId }?.currency ?: "USD"
+            val selectedBudgetId = state.selectedBudgetId
 
             val result = if (state.isEditing && state.editingTransactionId != null) {
                 val updatedTx = Transaction(
@@ -229,21 +252,32 @@ class TransactionViewModel(
                     amount = amount,
                     currency = selectedCurrency,
                     timestamp = txTimestamp,
-                    note = state.note.trim()
+                    note = state.note.trim(),
+                    budgetId = selectedBudgetId
                 )
-                updateTransactionUseCase(updatedTx)
+                val updateRes = updateTransactionUseCase(updatedTx)
+                if (updateRes.isSuccess && selectedBudgetId != null) {
+                    budgetRepository.linkTransactionToBudget(selectedBudgetId, updatedTx.id)
+                }
+                updateRes
             } else {
+                val newTxId = "tx_${now}_${(100..999).random()}"
                 val newTx = Transaction(
-                    id = "tx_${now}_${(100..999).random()}",
+                    id = newTxId,
                     accountId = accountId,
                     categoryId = categoryId,
                     type = state.type,
                     amount = amount,
                     currency = selectedCurrency,
                     timestamp = txTimestamp,
-                    note = state.note.trim()
+                    note = state.note.trim(),
+                    budgetId = selectedBudgetId
                 )
-                createTransactionUseCase(newTx)
+                val createRes = createTransactionUseCase(newTx)
+                if (createRes.isSuccess && selectedBudgetId != null) {
+                    budgetRepository.linkTransactionToBudget(selectedBudgetId, newTx.id)
+                }
+                createRes
             }
 
             _isSubmitting.value = false

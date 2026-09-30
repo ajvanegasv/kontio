@@ -31,6 +31,29 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `budget_transactions` (
+                `id` TEXT NOT NULL PRIMARY KEY,
+                `budgetId` TEXT NOT NULL,
+                `transactionId` TEXT NOT NULL,
+                `createdAt` INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+        connection.execSQL("CREATE INDEX IF NOT EXISTS index_budget_transactions_budgetId ON budget_transactions (budgetId)")
+        connection.execSQL("CREATE INDEX IF NOT EXISTS index_budget_transactions_transactionId ON budget_transactions (transactionId)")
+        connection.execSQL(
+            """
+            INSERT OR IGNORE INTO `budget_transactions` (`id`, `budgetId`, `transactionId`, `createdAt`)
+            SELECT 'btx_' || id, budgetId, id, timestamp FROM `transactions` WHERE budgetId IS NOT NULL
+            """.trimIndent()
+        )
+    }
+}
+
 expect fun getDatabaseBuilder(): RoomDatabase.Builder<KontioDatabase>
 
 fun createRoomDatabase(
@@ -39,7 +62,7 @@ fun createRoomDatabase(
     return builder
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
-        .addMigrations(MIGRATION_1_2)
+        .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 }

@@ -265,6 +265,19 @@ fun BudgetItemCard(
                     )
                 }
             }
+
+            if (item.lastTransaction != null) {
+                Spacer(modifier = Modifier.height(10.dp))
+                val lastTx = item.lastTransaction
+                val txNote = if (lastTx.note.isNotBlank()) " • ${lastTx.note}" else ""
+                Text(
+                    text = "Último registro: ${CurrencyFormatter.format(lastTx.amount, budget.currency)}$txNote",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }

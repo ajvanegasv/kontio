@@ -31,5 +31,6 @@ data class BudgetWithProgress(
     val percentage: Float,
     val isExceeded: Boolean,
     val exceededAmount: Double,
-    val transactionsCount: Int
+    val transactionsCount: Int,
+    val lastTransaction: Transaction? = null
 )

@@ -71,6 +71,20 @@ class FakeBudgetRepository(
     }
 
     override suspend fun getBudgetsCount(): Int = budgetsMap.value.size
+
+    val linkedTransactions = MutableStateFlow<Map<String, Set<String>>>(emptyMap())
+
+    override suspend fun linkTransactionToBudget(budgetId: String, transactionId: String): Result<Unit> {
+        val current = linkedTransactions.value[budgetId] ?: emptySet()
+        linkedTransactions.value = linkedTransactions.value + (budgetId to (current + transactionId))
+        return Result.success(Unit)
+    }
+
+    override suspend fun unlinkTransactionFromBudget(budgetId: String, transactionId: String): Result<Unit> {
+        val current = linkedTransactions.value[budgetId] ?: emptySet()
+        linkedTransactions.value = linkedTransactions.value + (budgetId to (current - transactionId))
+        return Result.success(Unit)
+    }
 }
 
 class BudgetUseCaseTest {

@@ -11,6 +11,7 @@ import dev.ajvanegasv.kontio.domain.model.Category
 import dev.ajvanegasv.kontio.domain.model.Transaction
 import dev.ajvanegasv.kontio.domain.model.TransactionType
 import dev.ajvanegasv.kontio.domain.repository.AccountRepository
+import dev.ajvanegasv.kontio.domain.repository.BudgetRepository
 import dev.ajvanegasv.kontio.domain.repository.CategoryRepository
 import dev.ajvanegasv.kontio.domain.usecase.CreateBudgetUseCase
 import dev.ajvanegasv.kontio.domain.usecase.CreateTransactionUseCase
@@ -56,6 +57,7 @@ class BudgetsViewModel(
     getBudgetsWithProgressUseCase: GetBudgetsWithProgressUseCase = AppContainer.getBudgetsWithProgressUseCase,
     categoryRepository: CategoryRepository = AppContainer.categoryRepository,
     accountRepository: AccountRepository = AppContainer.accountRepository,
+    private val budgetRepository: BudgetRepository = AppContainer.budgetRepository,
     private val createBudgetUseCase: CreateBudgetUseCase = AppContainer.createBudgetUseCase,
     private val updateBudgetUseCase: UpdateBudgetUseCase = AppContainer.updateBudgetUseCase,
     private val deleteBudgetUseCase: DeleteBudgetUseCase = AppContainer.deleteBudgetUseCase,
@@ -259,6 +261,7 @@ class BudgetsViewModel(
             _dialogState.value = _dialogState.value.copy(isSubmittingPayment = false)
 
             if (result.isSuccess) {
+                budgetRepository.linkTransactionToBudget(budgetProgress.budget.id, newTx.id)
                 _dialogState.value = _dialogState.value.copy(budgetForPayment = null)
                 onSuccess()
             } else {

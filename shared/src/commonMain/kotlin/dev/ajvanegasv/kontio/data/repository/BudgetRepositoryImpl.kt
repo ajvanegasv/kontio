@@ -1,9 +1,11 @@
 package dev.ajvanegasv.kontio.data.repository
 
 import dev.ajvanegasv.kontio.data.local.dao.BudgetDao
+import dev.ajvanegasv.kontio.data.local.dao.BudgetTransactionDao
 import dev.ajvanegasv.kontio.data.local.dao.CategoryDao
 import dev.ajvanegasv.kontio.data.local.dao.TransactionDao
 import dev.ajvanegasv.kontio.data.local.entity.BudgetEntity
+import dev.ajvanegasv.kontio.data.local.entity.BudgetTransactionEntity
 import dev.ajvanegasv.kontio.domain.model.Budget
 import dev.ajvanegasv.kontio.domain.model.BudgetWithProgress
 import dev.ajvanegasv.kontio.domain.model.TransactionType
@@ -20,7 +22,8 @@ import kotlinx.datetime.toLocalDateTime
 class BudgetRepositoryImpl(
     private val budgetDao: BudgetDao,
     private val categoryDao: CategoryDao,
-    private val transactionDao: TransactionDao
+    private val transactionDao: TransactionDao,
+    private val budgetTransactionDao: BudgetTransactionDao
 ) : BudgetRepository {
 
     override fun getBudgets(): Flow<List<Budget>> {
@@ -33,10 +36,17 @@ class BudgetRepositoryImpl(
         return combine(
             budgetDao.getAllBudgets(),
             categoryDao.getAllCategories(),
-            transactionDao.getAllTransactions()
-        ) { budgetEntities, categoryEntities, transactionEntities ->
+            transactionDao.getAllTransactions(),
+            budgetTransactionDao.getAllBudgetTransactions()
+        ) { budgetEntities, categoryEntities, transactionEntities, budgetTransactionEntities ->
             val catMap = categoryEntities.associate { it.id to it.toDomain() }
             val (startOfMonthMillis, endOfMonthMillis) = calculateCurrentMonthBounds()
+
+            // Mapa de budgetId -> Set<transactionId> desde la tabla intermedia
+            val budgetToTxIds = budgetTransactionEntities.groupBy(
+                keySelector = { it.budgetId },
+                valueTransform = { it.transactionId }
+            ).mapValues { it.value.toSet() }
 
             // Filtramos las transacciones de tipo gasto dentro del mes actual
             val currentMonthExpenses = transactionEntities.filter { tx ->
@@ -52,9 +62,12 @@ class BudgetRepositoryImpl(
                 val budget = entity.toDomain()
                 val category = catMap[budget.categoryId]
 
-                // Transacciones asociadas: coinciden en categoryId o explícitamente en budgetId
+                val linkedTxIds = budgetToTxIds[budget.id] ?: emptySet()
+
+                // Transacciones asociadas: únicamente por tabla intermedia o retrocompatibilidad tx.budgetId
+                // Ya NO se asocian por tx.categoryId == budget.categoryId
                 val matchingTransactions = currentMonthExpenses.filter { tx ->
-                    tx.categoryId == budget.categoryId || tx.budgetId == budget.id
+                    linkedTxIds.contains(tx.id) || tx.budgetId == budget.id
                 }
 
                 val spent = matchingTransactions.sumOf { it.amount }
@@ -63,6 +76,10 @@ class BudgetRepositoryImpl(
                 val isExceeded = spent > limit
                 val exceededAmount = if (isExceeded) spent - limit else 0.0
                 val percentage = if (limit > 0.0) (spent / limit).toFloat() else 0f
+                val lastTxEntity = matchingTransactions.maxByOrNull { it.timestamp }
+                val lastTransaction = lastTxEntity?.toDomain()?.copy(
+                    category = category
+                )
 
                 BudgetWithProgress(
                     budget = budget.copy(category = category),
@@ -73,7 +90,8 @@ class BudgetRepositoryImpl(
                     percentage = percentage,
                     isExceeded = isExceeded,
                     exceededAmount = exceededAmount,
-                    transactionsCount = matchingTransactions.size
+                    transactionsCount = matchingTransactions.size,
+                    lastTransaction = lastTransaction
                 )
             }
         }
@@ -107,6 +125,7 @@ class BudgetRepositoryImpl(
 
     override suspend fun deleteBudget(id: String): Result<Unit> {
         return try {
+            budgetTransactionDao.deleteByBudgetId(id)
             budgetDao.deleteBudget(id)
             Result.success(Unit)
         } catch (e: Exception) {
@@ -116,6 +135,33 @@ class BudgetRepositoryImpl(
 
     override suspend fun getBudgetsCount(): Int {
         return budgetDao.getBudgetsCount()
+    }
+
+    override suspend fun linkTransactionToBudget(budgetId: String, transactionId: String): Result<Unit> {
+        return try {
+            val now = Clock.System.now().toEpochMilliseconds()
+            val linkId = "btx_${now}_${(100..999).random()}"
+            budgetTransactionDao.insertBudgetTransaction(
+                BudgetTransactionEntity(
+                    id = linkId,
+                    budgetId = budgetId,
+                    transactionId = transactionId,
+                    createdAt = now
+                )
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun unlinkTransactionFromBudget(budgetId: String, transactionId: String): Result<Unit> {
+        return try {
+            budgetTransactionDao.deleteLink(budgetId, transactionId)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     private fun calculateCurrentMonthBounds(): Pair<Long, Long> {

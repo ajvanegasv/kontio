@@ -74,6 +74,20 @@ private class FakeBudgetTestRepo : BudgetRepository {
     }
 
     override suspend fun getBudgetsCount(): Int = budgetsMap.value.size
+
+    val linkedTransactions = MutableStateFlow<Map<String, Set<String>>>(emptyMap())
+
+    override suspend fun linkTransactionToBudget(budgetId: String, transactionId: String): Result<Unit> {
+        val current = linkedTransactions.value[budgetId] ?: emptySet()
+        linkedTransactions.value = linkedTransactions.value + (budgetId to (current + transactionId))
+        return Result.success(Unit)
+    }
+
+    override suspend fun unlinkTransactionFromBudget(budgetId: String, transactionId: String): Result<Unit> {
+        val current = linkedTransactions.value[budgetId] ?: emptySet()
+        linkedTransactions.value = linkedTransactions.value + (budgetId to (current - transactionId))
+        return Result.success(Unit)
+    }
 }
 
 private class FakeCategoryTestRepo : CategoryRepository {
@@ -218,6 +232,7 @@ class BudgetsViewModelTest {
             getBudgetsWithProgressUseCase = getBudgetsWithProgressUseCase,
             categoryRepository = categoryRepo,
             accountRepository = accountRepo,
+            budgetRepository = budgetRepo,
             createBudgetUseCase = createBudgetUseCase,
             updateBudgetUseCase = updateBudgetUseCase,
             deleteBudgetUseCase = deleteBudgetUseCase,
@@ -353,7 +368,7 @@ class BudgetsViewModelTest {
 
     @Test
     fun testQuickPaymentFlow(): Unit = runBlocking {
-        val (viewModel, _, txRepo) = setupViewModel()
+        val (viewModel, budgetRepo, txRepo) = setupViewModel()
 
         viewModel.saveBudget(
             name = "Internet",
@@ -393,5 +408,8 @@ class BudgetsViewModelTest {
         assertEquals(expenseCategory.id, tx.categoryId)
         assertEquals(budgetItem.budget.id, tx.budgetId)
         assertEquals("Pago del mes de Octubre", tx.note)
+        val linkedTxSet = budgetRepo.linkedTransactions.value[budgetItem.budget.id]
+        assertNotNull(linkedTxSet)
+        assertTrue(linkedTxSet.contains(tx.id))
     }
 }
